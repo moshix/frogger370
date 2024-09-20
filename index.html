@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frogger Game</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #222;
+        }
+        #gameCanvas {
+            background-color: #ccc; /* Default background */
+            border: 2px solid #000;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <audio id="gameOverSound" src="done.mp3"></audio>
+    <audio id="waterSound" src="water.mp3"></audio>
+    <audio id="jumpSound" src="jump.mp3"></audio>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Adjust canvas width and height to match the full width of the browser
+        canvas.width = window.innerWidth;
+        canvas.height = 600;
+
+        const gameOverSound = document.getElementById("gameOverSound");
+        const waterSound = document.getElementById("waterSound");
+        const jumpSound = document.getElementById("jumpSound");
+
+        const version = "v1.3"; // Version number
+
+        // Game variables
+        const gridSize = 50; // Size of each grid cell
+        const frogSpeed = gridSize;
+        let frog = { x: 5 * gridSize, y: 11 * gridSize }; // Starting position of the frog
+        let lives = 5;
+        let points = 0;
+        let message = "";
+        let isGameOver = false;
+        let isMuted = false;
+        let isPaused = false; // Pause state
+        let level = 1; // Starting level
+
+        // Load images
+        const frogImg = new Image();
+        frogImg.src = 'frog1.svg';
+        const logImg = new Image();
+        logImg.src = 'log.svg';
+        const grassImg = new Image();
+        grassImg.src = 'grass.svg';
+        const carImg = new Image();
+        carImg.src = 'car.svg';
+        const truckImg = new Image();
+        truckImg.src = 'truck.svg';
+        const bushImg = new Image();
+        bushImg.src = 'bush.svg'; // Image for the safe area
+        const waveImg = new Image();
+        waveImg.src = 'wave.svg'; // Image for waves in the river
+
+        // Create logs and grass on the river
+        const riverElements = [];
+        for (let i = 0; i < 3; i++) {
+            riverElements.push({ type: 'log', x: Math.random() * canvas.width, y: 2 * gridSize + i * 2 * gridSize, speed: -1 });
+            riverElements.push({ type: 'grass', x: Math.random() * canvas.width, y: 3 * gridSize + i * 2 * gridSize, speed: 1.5 });
+            // Add waves for visual effect
+            riverElements.push({ type: 'wave', x: Math.random() * canvas.width, y: gridSize + i * 2 * gridSize, speed: 0 });
+        }
+
+        // Create cars and trucks on the road
+        const roadElements = [];
+        for (let i = 0; i < 3; i++) {
+            roadElements.push({ type: 'car', x: Math.random() * canvas.width, y: 7 * gridSize + i * gridSize, speed: 2 });
+            roadElements.push({ type: 'truck', x: Math.random() * canvas.width, y: 7 * gridSize + (i + 1) * gridSize, speed: -2.5 });
+        }
+
+        // Keyboard input to move the frog and control game
+        document.addEventListener('keydown', (e) => {
+            if (!isGameOver && !isPaused) {
+                if (e.key === 'ArrowUp') moveFrog(0, -frogSpeed);
+                if (e.key === 'ArrowDown') moveFrog(0, frogSpeed);
+                if (e.key === 'ArrowLeft') moveFrog(-frogSpeed, 0);
+                if (e.key === 'ArrowRight') moveFrog(frogSpeed, 0);
+            } else if (isGameOver) {
+                if (e.key === 'R' || e.key === 'r') {
+                    restartGame();
+                }
+            }
+
+            if (e.key === 'M' || e.key === 'm') {
+                toggleMute();
+            }
+
+            if (e.key === 'P' || e.key === 'p') {
+                togglePause();
+            }
+        });
+
+        // Move the frog and play jump sound
+        function moveFrog(dx, dy) {
+            frog.x += dx;
+            frog.y += dy;
+
+            if (frog.x < 0) frog.x = 0;
+            if (frog.x > canvas.width - gridSize) frog.x = canvas.width - gridSize;
+            if (frog.y < 0) frog.y = 0;
+            if (frog.y > canvas.height - gridSize) frog.y = canvas.height - gridSize;
+
+            playSound(jumpSound);
+        }
+
+        // Play a sound if not muted
+        function playSound(sound) {
+            if (!isMuted) {
+                sound.currentTime = 0; // Reset to start
+                sound.play();
+            }
+        }
+
+        // Toggle sound on and off
+        function toggleMute() {
+            isMuted = !isMuted;
+            gameOverSound.muted = isMuted;
+            waterSound.muted = isMuted;
+            jumpSound.muted = isMuted;
+        }
+
+        // Toggle pause state
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                message = "Paused";
+            } else {
+                message = "";
+            }
+            drawMessage(); // Ensure message is shown immediately
+        }
+
+        // Draw the top safe area (bushes)
+        function drawSafeArea() {
+            ctx.fillStyle = "#228B22"; // Forest green for the safe area
+            ctx.fillRect(0, 0, canvas.width, gridSize);
+            ctx.drawImage(bushImg, 0, 0, canvas.width, gridSize); // Draw bushes
+        }
+
+        // Draw the river
+        function drawRiver() {
+            ctx.fillStyle = "#1E90FF"; // Blue color for water
+            ctx.fillRect(0, gridSize, canvas.width, 5 * gridSize);
+        }
+
+        // Draw the road
+        function drawRoad() {
+            ctx.fillStyle = "#696969"; // Grey color for road
+            ctx.fillRect(0, 6 * gridSize, canvas.width, 5 * gridSize);
+
+            // Add road markings
+            ctx.strokeStyle = "#FFF";
+            ctx.lineWidth = 4;
+            for (let i = 0; i < canvas.width; i += 60) {
+                ctx.beginPath();
+                ctx.moveTo(i, 8 * gridSize + gridSize / 2);
+                ctx.lineTo(i + 30, 8 * gridSize + gridSize / 2);
+                ctx.stroke();
+            }
+        }
+
+        // Draw the bottom area below the road
+        function drawBottomArea() {
+            ctx.fillStyle = "#2E8B57"; // Sea green color for bottom area
+            ctx.fillRect(0, 11 * gridSize, canvas.width, gridSize);
+        }
+
+        // Draw the game controls legend
+        function drawLegend() {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "16px Arial";
+            ctx.fillText("Arrows: Move | R: Restart | M: Mute | P: Pause", 10, canvas.height - 20);
+        }
+
+        // Draw the version number and level
+        function drawInfo() {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "16px Arial";
+            ctx.fillText("Version: " + version, 10, 20);
+            ctx.fillText("Level: " + level, canvas.width - 100, 20); // Display level on the upper right corner
+        }
+
+        // Draw the message in the center of the canvas
+        function drawMessage() {
+            ctx.fillStyle = "#FFFF00"; // Yellow color for message
+            ctx.font = "30px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+            ctx.textAlign = "left"; // Reset alignment
+        }
+
+        // Increase the speed of elements by 5%
+        function increaseSpeed() {
+            riverElements.forEach(el => {
+                el.speed *= 1.05; // Increase speed by 5%
+            });
+            roadElements.forEach(el => {
+                el.speed *= 1.05; // Increase speed by 5%
+            });
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!isGameOver && !isPaused) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw the safe area, river, road, bottom area, legend, version number, and message
+                drawSafeArea();
+                drawRiver();
+                drawRoad();
+                drawBottomArea();
+                drawLegend();
+                drawInfo();
+
+                // Draw elements on the river
+                riverElements.forEach(el => {
+                    if (el.y >= gridSize && el.y < 6 * gridSize) { // Ensure only on river area
+                        if (el.type === 'log') ctx.drawImage(logImg, el.x, el.y, gridSize, gridSize);
+                        if (el.type === 'grass') ctx.drawImage(grassImg, el.x, el.y, gridSize, gridSize);
+                        if (el.type === 'wave') ctx.drawImage(waveImg, el.x, el.y, gridSize, gridSize);
+
+                        // Move elements (except waves which are stationary)
+                        if (el.type !== 'wave') {
+                            el.x += el.speed;
+                            if (el.x < -gridSize) el.x = canvas.width;
+                            if (el.x > canvas.width) el.x = -gridSize;
+                        }
+                    }
+                });
+
+                // Draw elements on the road
+                roadElements.forEach(el => {
+                    if (el.y >= 6 * gridSize && el.y < 11 * gridSize) { // Ensure only on road area
+                        if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize, gridSize);
+                        if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2, gridSize); // Trucks are longer
+
+                        // Move elements
+                        el.x += el.speed;
+                        if (el.x < -gridSize * 2) el.x = canvas.width;
+                        if (el.x > canvas.width) el.x = -gridSize * 2;
+                    }
+                });
+
+                // Draw frog
+                ctx.drawImage(frogImg, frog.x, frog.y, gridSize, gridSize);
+
+                // Collision detection
+                let safeOnLogOrGrass = false;
+                riverElements.forEach(el => {
+                    if (isColliding(frog, el)) {
+                        if (el.type === 'log' || el.type === 'grass') {
+                            frog.x += el.speed; // Move with the log or grass
+                            safeOnLogOrGrass = true;
+                        }
+                    }
+                });
+
+                roadElements.forEach(el => {
+                    if (isColliding(frog, el)) {
+                        message = "Traffic hit!";
+                        showMessageAndRestart();
+                    }
+                });
+
+                // Check if frog is in the river and not on log/grass
+                if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {
+                    message = "Into the river!";
+                    playSound(waterSound);
+                    showMessageAndRestart();
+                }
+
+                // Check if frog reaches the top safe area (win condition)
+                if (frog.y <= 0) {
+                    message = "You made it!";
+                    points += 100;
+                    level++; // Increase the level
+                    increaseSpeed(); // Increase speed of all elements
+                    setTimeout(() => {
+                        if (lives > 0) {
+                            resetGame();
+                        }
+                    }, 3000);
+                }
+
+                // Draw lives and points
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "20px Arial";
+                ctx.fillText("Lives: " + lives, canvas.width - 150, canvas.height - 40);
+                ctx.fillText("Points: " + points, canvas.width - 150, canvas.height - 10);
+            }
+
+            // Draw the message if the game is paused or game over
+            if (isPaused || isGameOver) {
+                drawMessage();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resetGame() {
+            frog = { x: 5 * gridSize, y: 11 * gridSize };
+            message = "";
+        }
+
+        function loseLife() {
+            lives--;
+            if (lives <= 0) {
+                message = "GAME OVER";
+                if (!isMuted) {
+                    gameOverSound.play(); // Play sound only when not muted
+                }
+                isGameOver = true;
+                drawMessage(); // Show game over message
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "20px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("Press 'R' to restart", canvas.width / 2, canvas.height / 2 + 30);
+                ctx.textAlign = "left"; // Reset alignment
+            } else {
+                resetGame();
+            }
+        }
+
+        function showMessageAndRestart() {
+            isGameOver = true;
+            setTimeout(() => {
+                loseLife();
+                isGameOver = false;
+            }, 2000);
+        }
+
+        function restartGame() {
+            isGameOver = false;
+            isPaused = false;
+            lives = 5;
+            points = 0;
+            level = 1;
+            resetGame();
+            gameLoop();
+        }
+
+        function isColliding(rect1, rect2) {
+            return rect1.x < rect2.x + gridSize &&
+                   rect1.x + gridSize > rect2.x &&
+                   rect1.y < rect2.y + gridSize &&
+                   rect1.y + gridSize > rect2.y;
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
+

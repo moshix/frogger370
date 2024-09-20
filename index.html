@@ -33,7 +33,7 @@
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
 
-        const version = "v1.3"; // Version number
+        const version = "v1.6"; // Version number
 
         // Game variables
         const gridSize = 50; // Size of each grid cell
@@ -46,6 +46,12 @@
         let isMuted = false;
         let isPaused = false; // Pause state
         let level = 1; // Starting level
+        let levelComplete = false; // Track if the level is complete
+        let gameOverPlayed = false; // Track if the game over sound has been played
+
+        // Initial speeds for river and road elements
+        const initialRiverSpeeds = { log: -1, grass: 1.5 };
+        const initialRoadSpeeds = { car: 2, truck: -2.5 };
 
         // Load images
         const frogImg = new Image();
@@ -60,23 +66,21 @@
         truckImg.src = 'truck.svg';
         const bushImg = new Image();
         bushImg.src = 'bush.svg'; // Image for the safe area
+        const wallImg = new Image();
+        wallImg.src = 'wall.svg'; // Image for the wall between road and river
         const waveImg = new Image();
         waveImg.src = 'wave.svg'; // Image for waves in the river
 
-        // Create logs and grass on the river
-        const riverElements = [];
-        for (let i = 0; i < 3; i++) {
-            riverElements.push({ type: 'log', x: Math.random() * canvas.width, y: 2 * gridSize + i * 2 * gridSize, speed: -1 });
-            riverElements.push({ type: 'grass', x: Math.random() * canvas.width, y: 3 * gridSize + i * 2 * gridSize, speed: 1.5 });
-            // Add waves for visual effect
-            riverElements.push({ type: 'wave', x: Math.random() * canvas.width, y: gridSize + i * 2 * gridSize, speed: 0 });
-        }
+        // Create logs, grass, and waves on the river
+        let riverElements = createRiverElements();
 
         // Create cars and trucks on the road
-        const roadElements = [];
-        for (let i = 0; i < 3; i++) {
-            roadElements.push({ type: 'car', x: Math.random() * canvas.width, y: 7 * gridSize + i * gridSize, speed: 2 });
-            roadElements.push({ type: 'truck', x: Math.random() * canvas.width, y: 7 * gridSize + (i + 1) * gridSize, speed: -2.5 });
+        let roadElements = createRoadElements();
+
+        // Create wall elements between the road and river
+        const wallElements = [];
+        for (let x = 0; x < canvas.width; x += gridSize) {
+            wallElements.push({ x: x, y: 6 * gridSize });
         }
 
         // Keyboard input to move the frog and control game
@@ -100,6 +104,34 @@
                 togglePause();
             }
         });
+
+        // Create river elements (logs, grass, waves) with increased frequency and initial speeds
+        function createRiverElements() {
+            const elements = [];
+            const riverObjectCount = 4; // Increase by 20% from 3 to 4 objects per lane
+            for (let i = 0; i < riverObjectCount; i++) {
+                elements.push({ type: 'log', x: Math.random() * canvas.width, y: 2 * gridSize + i * 2 * gridSize, speed: initialRiverSpeeds.log });
+                elements.push({ type: 'grass', x: Math.random() * canvas.width, y: 3 * gridSize + i * 2 * gridSize, speed: initialRiverSpeeds.grass });
+                // Add waves for visual effect
+                elements.push({ type: 'wave', x: Math.random() * canvas.width, y: gridSize + i * 2 * gridSize, speed: 0 });
+            }
+
+            // Additional grass at the top of the river
+            for (let i = 0; i < 5; i++) { // Increase by 20%
+                elements.push({ type: 'grass', x: Math.random() * canvas.width, y: gridSize, speed: initialRiverSpeeds.grass });
+            }
+            return elements;
+        }
+
+        // Create road elements (cars, trucks) with separate lanes and initial speeds
+        function createRoadElements() {
+            const elements = [];
+            for (let i = 0; i < 3; i++) {
+                elements.push({ type: 'car', x: Math.random() * canvas.width, y: 7 * gridSize + i * 2 * gridSize, speed: initialRoadSpeeds.car });
+                elements.push({ type: 'truck', x: Math.random() * canvas.width, y: 7 * gridSize + (i * 2 + 1) * gridSize, speed: initialRoadSpeeds.truck });
+            }
+            return elements;
+        }
 
         // Move the frog and play jump sound
         function moveFrog(dx, dy) {
@@ -170,6 +202,13 @@
             }
         }
 
+        // Draw the wall between the road and the river
+        function drawWall() {
+            wallElements.forEach(el => {
+                ctx.drawImage(wallImg, el.x, el.y, gridSize, gridSize);
+            });
+        }
+
         // Draw the bottom area below the road
         function drawBottomArea() {
             ctx.fillStyle = "#2E8B57"; // Sea green color for bottom area
@@ -215,10 +254,11 @@
             if (!isGameOver && !isPaused) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Draw the safe area, river, road, bottom area, legend, version number, and message
+                // Draw the safe area, river, road, wall, bottom area, legend, version number, and message
                 drawSafeArea();
                 drawRiver();
                 drawRoad();
+                drawWall();
                 drawBottomArea();
                 drawLegend();
                 drawInfo();
@@ -242,7 +282,7 @@
                 // Draw elements on the road
                 roadElements.forEach(el => {
                     if (el.y >= 6 * gridSize && el.y < 11 * gridSize) { // Ensure only on road area
-                        if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize, gridSize);
+                        if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize * 1.33, gridSize); // Car is 33% larger
                         if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2, gridSize); // Trucks are longer
 
                         // Move elements
@@ -281,14 +321,15 @@
                 }
 
                 // Check if frog reaches the top safe area (win condition)
-                if (frog.y <= 0) {
+                if (frog.y <= 0 && !levelComplete) {
                     message = "You made it!";
                     points += 100;
-                    level++; // Increase the level
-                    increaseSpeed(); // Increase speed of all elements
+                    levelComplete = true; // Mark level as complete
                     setTimeout(() => {
                         if (lives > 0) {
-                            resetGame();
+                            increaseSpeed(); // Increase speed for the next level
+                            level++; // Increase the level
+                            resetGame(false); // Reset without speed accumulation
                         }
                     }, 3000);
                 }
@@ -308,17 +349,29 @@
             requestAnimationFrame(gameLoop);
         }
 
-        function resetGame() {
+        // Reset the game elements to their initial positions and speeds
+        function resetGame(resetSpeeds = true) {
             frog = { x: 5 * gridSize, y: 11 * gridSize };
             message = "";
+            levelComplete = false; // Allow new level to be completed
+            gameOverPlayed = false; // Reset game over sound play state
+
+            if (resetSpeeds) {
+                riverElements = createRiverElements();
+                roadElements = createRoadElements();
+            }
         }
 
         function loseLife() {
-            lives--;
-            if (lives <= 0) {
+            if (lives > 0) { // Prevent lives from going below zero
+                lives--;
+            }
+
+            if (lives <= 0 && !gameOverPlayed) {
                 message = "GAME OVER";
                 if (!isMuted) {
-                    gameOverSound.play(); // Play sound only when not muted
+                    gameOverSound.play(); // Play sound only once when not muted
+                    gameOverPlayed = true;
                 }
                 isGameOver = true;
                 drawMessage(); // Show game over message
@@ -328,7 +381,7 @@
                 ctx.fillText("Press 'R' to restart", canvas.width / 2, canvas.height / 2 + 30);
                 ctx.textAlign = "left"; // Reset alignment
             } else {
-                resetGame();
+                resetGame(false); // Reset without speed accumulation
             }
         }
 
@@ -346,7 +399,8 @@
             lives = 5;
             points = 0;
             level = 1;
-            resetGame();
+            gameOverPlayed = false; // Reset game over sound play state
+            resetGame(); // Full reset with initial speeds
             gameLoop();
         }
 
@@ -362,4 +416,3 @@
     </script>
 </body>
 </html>
-

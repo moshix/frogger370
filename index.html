@@ -43,6 +43,8 @@
         // v1.8 move everything to variables
         // v1.9 deal with differential speeds
         // v2.0 timer to get over to the other side!
+        // v2.1 tune timer parameter
+        
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
@@ -58,7 +60,7 @@
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
-            car: 4, // Number of cars per lane
+            car: 6, // Number of cars per lane
             truck: 4, // Number of trucks per lane
             grass: 5, // Number of grass per river lane
             log: 4 // Number of logs per river lane
@@ -74,7 +76,7 @@
         // Game variables
         const gridSize = 50; // Size of each grid cell
         const frogSpeed = gridSize;
-        const initialTimer = 16; // Global timer for crossing the road and river
+        const initialTimer = 21; // Global timer for crossing the road and river
         let frog = { x: 5 * gridSize, y: 11 * gridSize }; // Starting position of the frog
         let lives = 5;
         let points = 0;

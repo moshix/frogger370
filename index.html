@@ -45,6 +45,7 @@
         // v2.0 timer to get over to the other side!
         // v2.1 tune timer parameter
         // v2.2 make grass available in top lane (bug)
+        // v2.3 copyright notice
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -57,7 +58,7 @@
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
 
-        const version = "v2.2"; // Version number
+        const version = "v2.3"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -359,6 +360,8 @@
                 drawBottomArea();
                 drawLegend();
                 drawInfo();
+                drawFooterText();
+
 
                 // Draw elements on the river
                 riverElements.forEach(el => {
@@ -466,6 +469,13 @@
                 roadElements = createRoadElements();
             }
         }
+function drawFooterText() {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("(c) 2024 hotdog studios", canvas.width / 2, canvas.height - 10);
+    ctx.textAlign = "left"; // Reset alignment
+}
 
         function loseLife() {
             if (lives > 0) { // Prevent lives from going below zero

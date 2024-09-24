@@ -44,7 +44,8 @@
         // v1.9 deal with differential speeds
         // v2.0 timer to get over to the other side!
         // v2.1 tune timer parameter
-        
+        // v2.2 make grass available in top lane (bug)
+
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
@@ -56,27 +57,27 @@
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
 
-        const version = "v2.0"; // Version number
+        const version = "v2.2"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
-            car: 6, // Number of cars per lane
-            truck: 4, // Number of trucks per lane
-            grass: 5, // Number of grass per river lane
+            car: 3, // Number of cars per lane
+            truck: 3, // Number of trucks per lane
+            grass: 4, // Number of grass per river lane
             log: 4 // Number of logs per river lane
         };
 
         const objectSpeeds = {
-            car: 3, // Car speed
-            truck: -4.5, // Truck speed
-            grass: 2.5, // Grass speed
+            car: 2, // Car speed
+            truck: -2.5, // Truck speed
+            grass: 1.5, // Grass speed
             log: -1 // Log speed
         };
 
         // Game variables
         const gridSize = 50; // Size of each grid cell
         const frogSpeed = gridSize;
-        const initialTimer = 21; // Global timer for crossing the road and river
+        const initialTimer = 12; // Global timer for crossing the road and river
         let frog = { x: 5 * gridSize, y: 11 * gridSize }; // Starting position of the frog
         let lives = 5;
         let points = 0;
@@ -178,6 +179,11 @@
         // Create river elements (logs, grass, waves) with increased frequency and initial speeds
         function createRiverElements() {
             const elements = [];
+            // Create grass for the top lane
+            for (let i = 0; i < appearanceFrequency.grass; i++) {
+                elements.push(createRiverObject('grass', gridSize, elements)); // Top lane grass
+            }
+            // Create logs and grass for the other lanes
             for (let i = 0; i < appearanceFrequency.log; i++) {
                 elements.push(createRiverObject('log', 2 * gridSize + (i % 2) * 2 * gridSize, elements));
             }

@@ -91,7 +91,7 @@
         let gameOverPlayed = false; // Track if the game over sound has been played
         let countdown = initialTimer; // Timer countdown for each level
 
-        // Load images with error handling
+        // Load images with  generalized error handling
         const frogImg = new Image();
         const logImg = new Image();
         const grassImg = new Image();
@@ -125,6 +125,8 @@
         jumpSound.onerror = () => console.error(`Failed to load audio: ${jumpSound.src}`);
 
         // Wait for all images to load before starting the game
+        //   due to MVS 3.8 HTTPD web server being a bit slow
+        //    it's 53 year old tech after all....
         let imagesLoaded = 0;
         images.forEach((img) => {
             img.onload = () => {
@@ -135,7 +137,8 @@
             };
         });
 
-        // Prevent default behavior of arrow keys
+        // Prevent default behavior of arrow keys 
+        // in Safari the arrow keys will move the whole canvas....sheesh
         window.addEventListener("keydown", (e) => {
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
                 e.preventDefault();
@@ -148,7 +151,7 @@
             wallElements.push({ x: x, y: 6 * gridSize });
         }
 
-        // Create a river object ensuring no overlap
+        // Create a river object, make sure no overlap
         function createRiverObject(type, y, elements) {
             let x;
             do {
@@ -166,15 +169,15 @@
             return { type, x, y, speed: objectSpeeds[type] };
         }
 
-        // Check if the new object is too close to existing objects
+        // Check if the new object  placed is to close to previous object
         function isTooClose(x, y, elements) {
             return elements.some(el => Math.abs(el.x - x) < 100 && el.y === y);
         }
 
-        // Create logs, grass, and waves on the river
+        // Put grass and logs on river
         let riverElements = createRiverElements();
 
-        // Create cars and trucks on the road
+        // Put cars and trucks on road
         let roadElements = createRoadElements();
 
         // Create river elements (logs, grass, waves) with increased frequency and initial speeds
@@ -220,6 +223,7 @@
             }
 
             if (e.key === 'M' || e.key === 'm') {
+                // user wants to mute or unmute
                 toggleMute();
             }
 
@@ -313,14 +317,14 @@
         }
 
         // Draw the game controls legend
-        function drawLegend() {
+  function drawLegend() {
             ctx.fillStyle = "#FFFFFF";
             ctx.font = "16px Arial";
             ctx.fillText("Arrows: Move | R: Restart | M: Mute | P: Pause", 10, canvas.height - 20);
-        }
+ }
 
         // Draw the version number and level
-        function drawInfo() {
+    function drawInfo() {
             ctx.fillStyle = "#FFFFFF";
             ctx.font = "16px Arial";
             ctx.fillText("Version: " + version, 10, 20);
@@ -347,7 +351,7 @@
             });
         }
 
-        // Game loop
+        // Main game loop
         function gameLoop() {
             if (!isGameOver && !isPaused) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -360,7 +364,7 @@
                 drawBottomArea();
                 drawLegend();
                 drawInfo();
-                drawFooterText();
+                drawFooterText(); // for copyright text
 
 
                 // Draw elements on the river

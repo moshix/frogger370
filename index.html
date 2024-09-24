@@ -22,6 +22,25 @@
     <audio id="waterSound" src="water.mp3"></audio>
     <audio id="jumpSound" src="jump.mp3"></audio>
     <script>
+        // Frgger game for the browser, and for MVS 3.8 TK4+
+        // (c) 2024 by moshix
+        // 
+        //  initially created to have a fun game to play on powerful 
+        //  IBM z mainframes running z/OS
+        //  ... but it really runs anywhere
+        // v 0.1 humble beginnings
+        // v 0.2 include car, log, truck, grass, and frog SVGs
+        // v 0.3 game logic
+        // v 0.4 make everything a variable
+        // v 0.5 - 1.0 various improvements in game logic
+        // v 1.1 levels!
+        // v 1.2 increase levels and remove bugs
+        // v 1.3 more friggin bugs removal
+        // v1.4 more DDT
+        // v1.5 fix Safari bug with the whole canvas moving
+        // v1.6 fix logs being shown upright
+        // v1.7 more frequent objects
+        
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
@@ -33,7 +52,7 @@
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
 
-        const version = "v1.6"; // Version number
+        const version = "v1.7"; // Version number
 
         // Game variables
         const gridSize = 50; // Size of each grid cell
@@ -51,7 +70,7 @@
 
         // Initial speeds for river and road elements
         const initialRiverSpeeds = { log: -1, grass: 1.5 };
-        const initialRoadSpeeds = { car: 2, truck: -2.5 };
+        const initialRoadSpeeds = { car: 2, truck: -4.0 };
 
         // Load images
         const frogImg = new Image();
@@ -108,7 +127,7 @@
         // Create river elements (logs, grass, waves) with increased frequency and initial speeds
         function createRiverElements() {
             const elements = [];
-            const riverObjectCount = 4; // Increase by 20% from 3 to 4 objects per lane
+            const riverObjectCount = 6; // Increase by 20% from 3 to 4 objects per lane
             for (let i = 0; i < riverObjectCount; i++) {
                 elements.push({ type: 'log', x: Math.random() * canvas.width, y: 2 * gridSize + i * 2 * gridSize, speed: initialRiverSpeeds.log });
                 elements.push({ type: 'grass', x: Math.random() * canvas.width, y: 3 * gridSize + i * 2 * gridSize, speed: initialRiverSpeeds.grass });
@@ -126,7 +145,7 @@
         // Create road elements (cars, trucks) with separate lanes and initial speeds
         function createRoadElements() {
             const elements = [];
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 9; i++) {
                 elements.push({ type: 'car', x: Math.random() * canvas.width, y: 7 * gridSize + i * 2 * gridSize, speed: initialRoadSpeeds.car });
                 elements.push({ type: 'truck', x: Math.random() * canvas.width, y: 7 * gridSize + (i * 2 + 1) * gridSize, speed: initialRoadSpeeds.truck });
             }

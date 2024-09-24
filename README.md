@@ -4,7 +4,7 @@ A frogger for MVS 3.8 and any other webserver, even for  python3 -m http.server 
 
 Game logic: you know it. Same, same. 
 
-Play it here: [https://github.io/moshix/frogger370]
+Play it here: [https://moshix.github.io/frogger370]
 
 Moshix, September 2024  
 Milan

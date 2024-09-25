@@ -46,6 +46,7 @@
         // v2.1 tune timer parameter
         // v2.2 make grass available in top lane (bug)
         // v2.3 copyright notice
+        // v2.4 say well done when frog arrived
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -58,7 +59,7 @@
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
 
-        const version = "v2.3"; // Version number
+        const version = "v2.4"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -427,7 +428,9 @@
                 // Check if frog reaches the top safe area (win condition)
                 if (frog.y <= 0 && !levelComplete) {
                     message = "You made it!";
-                    points += 100;
+                    points += countdown *10;
+                    message = "You made it!";
+                    drawMessage();
                     levelComplete = true; // Mark level as complete
                     setTimeout(() => {
                         if (lives > 0) {
@@ -435,13 +438,13 @@
                             level++; // Increase the level
                             resetGame(false); // Reset without speed accumulation
                         }
-                    }, 3000);
+                    }, 2000);
                 }
 
                 // Decrease countdown timer and check for timeout
                 countdown -= 1 / 60; // Decrease by 1 second every 60 frames
                 if (countdown <= 0) {
-                    message = "Too slow! You lost one life!";
+                    message = "Too slow! You lost 1 life!";
                     showMessageAndRestart(); // Display message and restart the game
                 }
 

@@ -430,12 +430,13 @@
                     message = "You made it!";
                     points += countdown *10;
                     message = "You made it!";
-                    drawMessage();
+                    
                     levelComplete = true; // Mark level as complete
                     setTimeout(() => {
                         if (lives > 0) {
                             increaseSpeed(); // Increase speed for the next level
                             level++; // Increase the level
+                            drawMessage();
                             resetGame(false); // Reset without speed accumulation
                         }
                     }, 2000);

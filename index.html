@@ -51,6 +51,7 @@
         // v2.4 say well done when frog arrived
         // v2.5 fix point system
         // v2.6 tadaa sound
+        // v2.7 fix game over logic
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -64,7 +65,7 @@
         const jumpSound = document.getElementById("jumpSound");
         const tadaaSound = document.getElementById("tadaaSound");
 
-        const version = "v2.6"; // Version number
+        const version = "v2.7"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -490,36 +491,32 @@
                 roadElements = createRoadElements();
             }
         }
-function drawFooterText() {
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "14px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("(c) 2024 hotdog studios", canvas.width / 2, canvas.height - 10);
-    ctx.textAlign = "left"; // Reset alignment
-}
+      function drawFooterText() {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("(c) 2024 hotdog studios", canvas.width / 2, canvas.height - 10);
+        ctx.textAlign = "left"; // Reset alignment
+    }
 
         function loseLife() {
             if (lives > 0) { // Prevent lives from going below zero
                 lives--;
             }
 
-            if (lives <= 0 && !gameOverPlayed) {
-                message = "GAME OVER";
-                if (!isMuted) {
-                    gameOverSound.play(); // Play sound only once when not muted
-                    gameOverPlayed = true;
-                }
-                isGameOver = true;
-                drawMessage(); // Show game over message
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "20px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText("Press 'R' to restart", canvas.width / 2, canvas.height / 2 + 30);
-                ctx.textAlign = "left"; // Reset alignment
-            } else {
-                resetGame(false); // Reset without speed accumulation
+             if (lives <= 0) { // When all lives are lost
+              message = "Game over!";
+              drawMessage(); // Display game over message
+              isGameOver = true; // Set game over state to true
+
+               // Restart game after displaying message for 3 seconds
+              setTimeout(() => {
+                  restartGame(); // Restart the game from scratch
+               }, 3000);
+              } else {
+                 resetGame(false); // Reset game elements without changing speed
             }
-        }
+           }
 
         function showMessageAndRestart() {
             isGameOver = true;

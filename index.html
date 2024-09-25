@@ -47,6 +47,7 @@
         // v2.2 make grass available in top lane (bug)
         // v2.3 copyright notice
         // v2.4 say well done when frog arrived
+        // v2.5 fix point system
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -59,7 +60,7 @@
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
 
-        const version = "v2.4"; // Version number
+        const version = "v2.5"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -329,8 +330,10 @@
             ctx.fillStyle = "#FFFFFF";
             ctx.font = "16px Arial";
             ctx.fillText("Version: " + version, 10, 20);
-            ctx.fillText("Level: " + level, canvas.width - 100, 20); // Display level on the upper right corner
-            ctx.fillText("Time: " + Math.ceil(countdown) + "s", canvas.width / 2 - 50, 20); // Display the timer countdown in the center
+             // Display level on the upper right corner
+            ctx.fillText("Level: " + level, canvas.width - 100, 20);
+            // Display the timer countdown in the center       
+            ctx.fillText("Time: " + Math.ceil(countdown) + "s", canvas.width / 2 - 50, 20); 
         }
 
         // Draw the message in the center of the canvas
@@ -428,15 +431,19 @@
                 // Check if frog reaches the top safe area (win condition)
                 if (frog.y <= 0 && !levelComplete) {
                     message = "You made it!";
-                    points += countdown *10;
-                    message = "You made it!";
+                    let increase = countdown * 10;
+                    points +=  Math.floor(+increase); //integer only
                     
+                    message = "You made it!";
+                    setTimeout(() => {
+                       drawMessage();
+                     }, 1000);
                     levelComplete = true; // Mark level as complete
                     setTimeout(() => {
                         if (lives > 0) {
                             increaseSpeed(); // Increase speed for the next level
                             level++; // Increase the level
-                            drawMessage();
+                            
                             resetGame(false); // Reset without speed accumulation
                         }
                     }, 2000);

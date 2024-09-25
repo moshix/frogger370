@@ -21,6 +21,8 @@
     <audio id="gameOverSound" src="done.mp3"></audio>
     <audio id="waterSound" src="water.mp3"></audio>
     <audio id="jumpSound" src="jump.mp3"></audio>
+    <audio id="tadaaSound" src="tadaa.mp3"></audio>
+    
     <script>
         // Frogger game for the browser, and for MVS 3.8 TK4+
         // (c) 2024 by moshix
@@ -48,6 +50,7 @@
         // v2.3 copyright notice
         // v2.4 say well done when frog arrived
         // v2.5 fix point system
+        // v2.6 tadaa sound
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -59,8 +62,9 @@
         const gameOverSound = document.getElementById("gameOverSound");
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
+        const tadaaSound = document.getElementById("tadaaound";
 
-        const version = "v2.5"; // Version number
+        const version = "v2.6"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -125,6 +129,7 @@
         gameOverSound.onerror = () => console.error(`Failed to load audio: ${gameOverSound.src}`);
         waterSound.onerror = () => console.error(`Failed to load audio: ${waterSound.src}`);
         jumpSound.onerror = () => console.error(`Failed to load audio: ${jumpSound.src}`);
+        tadaaSound.onerror = () => console.error(`Failed to load audio: ${tadaaSound.src}`);
 
         // Wait for all images to load before starting the game
         //   due to MVS 3.8 HTTPD web server being a bit slow
@@ -262,6 +267,7 @@
             gameOverSound.muted = isMuted;
             waterSound.muted = isMuted;
             jumpSound.muted = isMuted;
+            tadaaSound.muted = isMuted;
             message = isMuted ? "Muted" : ""; // Show "Muted" message when muted
         }
 
@@ -359,6 +365,7 @@
         function gameLoop() {
             if (!isGameOver && !isPaused) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
 
                 // Draw the safe area, river, road, wall, bottom area, legend, version number, and message
                 drawSafeArea();
@@ -433,11 +440,10 @@
                     message = "You made it!";
                     let increase = countdown * 10;
                     points +=  Math.floor(+increase); //integer only
-                    
+                    playSound(tadaaSound);
                     message = "You made it!";
-                    setTimeout(() => {
-                       drawMessage();
-                     }, 1000);
+                    drawMessage();
+                     
                     levelComplete = true; // Mark level as complete
                     setTimeout(() => {
                         if (lives > 0) {

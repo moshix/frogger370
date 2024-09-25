@@ -22,6 +22,7 @@
     <audio id="waterSound" src="water.mp3"></audio>
     <audio id="jumpSound" src="jump.mp3"></audio>
     <audio id="tadaaSound" src="tadaa.mp3"></audio>
+
     
     <script>
         // Frogger game for the browser, and for MVS 3.8 TK4+
@@ -65,7 +66,7 @@
         const jumpSound = document.getElementById("jumpSound");
         const tadaaSound = document.getElementById("tadaaSound");
 
-        const version = "v2.7"; // Version number
+        const version = "v2.7.1"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -506,7 +507,9 @@
 
              if (lives <= 0) { // When all lives are lost
               message = "Game over!";
-              drawMessage(); // Display game over message
+              drawMessage(); // Display game over message   
+              playsound(gameOverSound);
+              
               isGameOver = true; // Set game over state to true
 
                // Restart game after displaying message for 3 seconds

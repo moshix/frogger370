@@ -532,6 +532,12 @@
             lives = 5;
             points = 0;
             level = 1;
+            objectSpeeds = {
+              car: 4, // Car speed
+              truck: -3.2, // Truck speed
+              grass: 2.5, // Grass speed
+              log: -2 // Log speed
+             };
             gameOverPlayed = false; // Reset game over sound play state
             resetGame(); // Full reset with initial speeds
             gameLoop();

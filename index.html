@@ -53,6 +53,7 @@
         // v2.5 fix point system
         // v2.6 tadaa sound
         // v2.7 fix game over logic
+        // v2.8 fix some syntax stuff with constants
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -66,7 +67,7 @@
         const jumpSound = document.getElementById("jumpSound");
         const tadaaSound = document.getElementById("tadaaSound");
 
-        const version = "v2.7.1"; // Version number
+        const version = "v2.8"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -76,7 +77,7 @@
             log: 5 // Number of logs per river lane
         };
 
-        const objectSpeeds = {
+        let objectSpeeds = {
             car: 4, // Car speed
             truck: -3.2, // Truck speed
             grass: 2.5, // Grass speed

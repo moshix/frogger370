@@ -1,434 +1,405 @@
-< !DOCTYPE html >
-   <
-   html lang = "en" >
-   <
-   head >
-   <
-   meta charset = "UTF-8" >
-   <
-   meta name = "viewport"
-content = "width=device-width, initial-scale=1.0" >
-   <
-   title > Frogger Game < /title> <
-style >
-   body {
-      margin: 0;
-      background - color: #222;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frogger Game</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #222;
         }
-        # gameCanvas {
-            background - color: #ccc; /* Default background */
-            border: 2 px solid #000;
+        #gameCanvas {
+            background-color: #ccc; /* Default background */
+            border: 2px solid #000;
             display: block;
         }
     </style>
 </head>
 <body>
-    <canvas id= "gameCanvas" > < /canvas> <
-            audio id = "gameOverSound"
-            src = "done.mp3" > < /audio> <
-            audio id = "waterSound"
-            src = "water.mp3" > < /audio> <
-            audio id = "jumpSound"
-            src = "jump.mp3" > < /audio> <
-            audio id = "tadaaSound"
-            src = "tadaa.mp3" > < /audio>
+    <canvas id="gameCanvas"></canvas>
+    <audio id="gameOverSound" src="done.mp3"></audio>
+    <audio id="waterSound" src="water.mp3"></audio>
+    <audio id="jumpSound" src="jump.mp3"></audio>
+    <audio id="tadaaSound" src="tadaa.mp3"></audio>
 
+    
+    <script>
+        // Frogger game for the browser, and for MVS 3.8 TK4+
+        // (c) 2024 by moshix
+        //
+        //  initially created to have a fun game to play on powerful
+        //  IBM z mainframes running z/OS
+        //  ... but it really runs anywhere
+        // v 0.1 humble beginnings
+        // v 0.2 include car, log, truck, grass, and frog SVGs
+        // v 0.3 game logic
+        // v 0.4 make everything a variable
+        // v 0.5 - 1.0 various improvements in game logic
+        // v 1.1 levels!
+        // v 1.2 increase levels and remove bugs
+        // v 1.3 more friggin bugs removal
+        // v1.4 more DDT
+        // v1.5 fix Safari bug with the whole canvas moving
+        // v1.6 fix logs being shown upright
+        // v1.7 more frequent objects
+        // v1.8 move everything to variables
+        // v1.9 deal with differential speeds
+        // v2.0 timer to get over to the other side!
+        // v2.1 tune timer parameter
+        // v2.2 make grass available in top lane (bug)
+        // v2.3 copyright notice
+        // v2.4 say well done when frog arrived
+        // v2.5 fix point system
+        // v2.6 tadaa sound
+        // v2.7 fix game over logic
+        // v2.8 fix some syntax stuff with constants
 
-               <
-               script >
-               // Frogger game for the browser, and for MVS 3.8 TK4+
-               // (c) 2024 by moshix
-               //
-               //  initially created to have a fun game to play on powerful
-               //  IBM z mainframes running z/OS
-               //  ... but it really runs anywhere
-               // v 0.1 humble beginnings
-               // v 0.2 include car, log, truck, grass, and frog SVGs
-               // v 0.3 game logic
-               // v 0.4 make everything a variable
-               // v 0.5 - 1.0 various improvements in game logic
-               // v 1.1 levels!
-               // v 1.2 increase levels and remove bugs
-               // v 1.3 more friggin bugs removal
-               // v1.4 more DDT
-               // v1.5 fix Safari bug with the whole canvas moving
-               // v1.6 fix logs being shown upright
-               // v1.7 more frequent objects
-               // v1.8 move everything to variables
-               // v1.9 deal with differential speeds
-               // v2.0 timer to get over to the other side!
-               // v2.1 tune timer parameter
-               // v2.2 make grass available in top lane (bug)
-               // v2.3 copyright notice
-               // v2.4 say well done when frog arrived
-               // v2.5 fix point system
-               // v2.6 tadaa sound
-               // v2.7 fix game over logic
-               // v2.8 fix some syntax stuff with constants
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-               const canvas = document.getElementById("gameCanvas");
-            const ctx = canvas.getContext("2d");
+        // Adjust canvas width and height to match the full width of the browser
+        canvas.width = window.innerWidth;
+        canvas.height = 600;
 
-            // Adjust canvas width and height to match the full width of the browser
-            canvas.width = window.innerWidth;
-            canvas.height = 600;
+        const gameOverSound = document.getElementById("gameOverSound");
+        const waterSound = document.getElementById("waterSound");
+        const jumpSound = document.getElementById("jumpSound");
+        const tadaaSound = document.getElementById("tadaaSound");
 
-            const gameOverSound = document.getElementById("gameOverSound");
-            const waterSound = document.getElementById("waterSound");
-            const jumpSound = document.getElementById("jumpSound");
-            const tadaaSound = document.getElementById("tadaaSound");
+        const version = "v2.8"; // Version number
 
-            const version = "v2.8"; // Version number
+        // Global settings for appearance and speed
+        const appearanceFrequency = {
+            car: 6, // Number of cars per lane
+            truck:5, // Number of trucks per lane
+            grass: 5, // Number of grass per river lane
+            log: 5 // Number of logs per river lane
+        };
 
-            // Global settings for appearance and speed
-            const appearanceFrequency = {
-               car: 6, // Number of cars per lane
-               truck: 5, // Number of trucks per lane
-               grass: 5, // Number of grass per river lane
-               log: 5 // Number of logs per river lane
+        let objectSpeeds = {
+            car: 4, // Car speed
+            truck: -3.2, // Truck speed
+            grass: 2.5, // Grass speed
+            log: -2 // Log speed
+        };
+
+        // Game variables
+        const gridSize = 50; // Size of each grid cell
+        const frogSpeed = gridSize;
+        const initialTimer = 22; // Global timer for crossing the road and river
+        let frog = { x: 5 * gridSize, y: 11 * gridSize }; // Starting position of the frog
+        let lives = 5;
+        let points = 0;
+        let message = "";
+        let isGameOver = false;
+        let isMuted = false;
+        let isPaused = false; // Pause state
+        let level = 1; // Starting level
+        let levelComplete = false; // Track if the level is complete
+        let gameOverPlayed = false; // Track if the game over sound has been played
+        let countdown = initialTimer; // Timer countdown for each level
+
+        // Load images with  generalized error handling
+        const frogImg = new Image();
+        const logImg = new Image();
+        const grassImg = new Image();
+        const carImg = new Image();
+        const truckImg = new Image();
+        const bushImg = new Image();
+        const wallImg = new Image();
+        const waveImg = new Image();
+
+        // Set source paths and add error handlers
+        frogImg.src = 'frog1.svg';
+        logImg.src = 'log.svg';
+        grassImg.src = 'grass.svg';
+        carImg.src = 'car.svg';
+        truckImg.src = 'truck.svg';
+        bushImg.src = 'bush.svg';
+        wallImg.src = 'wall.svg';
+        waveImg.src = 'wave.svg';
+
+        // Error handling for images
+        const images = [frogImg, logImg, grassImg, carImg, truckImg, bushImg, wallImg, waveImg];
+        images.forEach((img) => {
+            img.onerror = () => {
+                console.error(`Failed to load image: ${img.src}`);
             };
+        });
 
-            let objectSpeeds = {
-               car: 4, // Car speed
-               truck: -3.2, // Truck speed
-               grass: 2.5, // Grass speed
-               log: -2 // Log speed
+        // Error handling for audio
+        gameOverSound.onerror = () => console.error(`Failed to load audio: ${gameOverSound.src}`);
+        waterSound.onerror = () => console.error(`Failed to load audio: ${waterSound.src}`);
+        jumpSound.onerror = () => console.error(`Failed to load audio: ${jumpSound.src}`);
+        tadaaSound.onerror = () => console.error(`Failed to load audio: ${tadaaSound.src}`);
+
+        // Wait for all images to load before starting the game
+        //   due to MVS 3.8 HTTPD web server being a bit slow
+        //    it's 53 year old tech after all....
+        let imagesLoaded = 0;
+        images.forEach((img) => {
+            img.onload = () => {
+                imagesLoaded++;
+                if (imagesLoaded === images.length) {
+                    startGame(); // Start the game after all images are loaded
+                }
             };
+        });
 
-            // Game variables
-            const gridSize = 50; // Size of each grid cell
-            const frogSpeed = gridSize;
-            const initialTimer = 22; // Global timer for crossing the road and river
-            let frog = {
-               x: 5 * gridSize,
-               y: 11 * gridSize
-            }; // Starting position of the frog
-            let lives = 5;
-            let points = 0;
-            let message = "";
-            let isGameOver = false;
-            let isMuted = false;
-            let isPaused = false; // Pause state
-            let level = 1; // Starting level
-            let levelComplete = false; // Track if the level is complete
-            let gameOverPlayed = false; // Track if the game over sound has been played
-            let countdown = initialTimer; // Timer countdown for each level
+        // Prevent default behavior of arrow keys 
+        // in Safari the arrow keys will move the whole canvas....sheesh
+        window.addEventListener("keydown", (e) => {
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
 
-            // Load images with  generalized error handling
-            const frogImg = new Image();
-            const logImg = new Image();
-            const grassImg = new Image();
-            const carImg = new Image();
-            const truckImg = new Image();
-            const bushImg = new Image();
-            const wallImg = new Image();
-            const waveImg = new Image();
+        // Create wall elements between the road and river
+        const wallElements = [];
+        for (let x = 0; x < canvas.width; x += gridSize) {
+            wallElements.push({ x: x, y: 6 * gridSize });
+        }
 
-            // Set source paths and add error handlers
-            frogImg.src = 'frog1.svg';
-            logImg.src = 'log.svg';
-            grassImg.src = 'grass.svg';
-            carImg.src = 'car.svg';
-            truckImg.src = 'truck.svg';
-            bushImg.src = 'bush.svg';
-            wallImg.src = 'wall.svg';
-            waveImg.src = 'wave.svg';
+        // Create a river object, make sure no overlap
+        function createRiverObject(type, y, elements) {
+            let x;
+            do {
+                x = Math.random() * canvas.width;
+            } while (isTooClose(x, y, elements));
+            return { type, x, y, speed: objectSpeeds[type] };
+        }
 
-            // Error handling for images
-            const images = [frogImg, logImg, grassImg, carImg, truckImg, bushImg, wallImg, waveImg];
-            images.forEach((img) => {
-               img.onerror = () => {
-                  console.error(`Failed to load image: ${img.src}`);
-               };
+        // Create a road object ensuring no overlap
+        function createRoadObject(type, y, elements) {
+            let x;
+            do {
+                x = Math.random() * canvas.width;
+            } while (isTooClose(x, y, elements));
+            return { type, x, y, speed: objectSpeeds[type] };
+        }
+
+        // Check if the new object  placed is to close to previous object
+        function isTooClose(x, y, elements) {
+            return elements.some(el => Math.abs(el.x - x) < 100 && el.y === y);
+        }
+
+        // Put grass and logs on river
+        let riverElements = createRiverElements();
+
+        // Put cars and trucks on road
+        let roadElements = createRoadElements();
+
+        // Create river elements (logs, grass, waves) with increased frequency and initial speeds
+        function createRiverElements() {
+            const elements = [];
+            // Create grass for the top lane
+            for (let i = 0; i < appearanceFrequency.grass; i++) {
+                elements.push(createRiverObject('grass', gridSize, elements)); // Top lane grass
+            }
+            // Create logs and grass for the other lanes
+            for (let i = 0; i < appearanceFrequency.log; i++) {
+                elements.push(createRiverObject('log', 2 * gridSize + (i % 2) * 2 * gridSize, elements));
+            }
+            for (let i = 0; i < appearanceFrequency.grass; i++) {
+                elements.push(createRiverObject('grass', 3 * gridSize + (i % 2) * 2 * gridSize, elements));
+            }
+            return elements;
+        }
+
+        // Create road elements (cars, trucks) with separate lanes and initial speeds
+        function createRoadElements() {
+            const elements = [];
+            for (let i = 0; i < appearanceFrequency.car; i++) {
+                elements.push(createRoadObject('car', 7 * gridSize + (i % 2) * 2 * gridSize, elements));
+            }
+            for (let i = 0; i < appearanceFrequency.truck; i++) {
+                elements.push(createRoadObject('truck', 7 * gridSize + ((i % 2) * 2 + 1) * gridSize, elements));
+            }
+            return elements;
+        }
+
+        // Keyboard input to move the frog and control game
+        document.addEventListener('keydown', (e) => {
+            if (!isGameOver && !isPaused) {
+                if (e.key === 'ArrowUp') moveFrog(0, -frogSpeed);
+                if (e.key === 'ArrowDown') moveFrog(0, frogSpeed);
+                if (e.key === 'ArrowLeft') moveFrog(-frogSpeed, 0);
+                if (e.key === 'ArrowRight') moveFrog(frogSpeed, 0);
+            } else if (isGameOver) {
+                if (e.key === 'R' || e.key === 'r') {
+                    restartGame();
+                }
+            }
+
+            if (e.key === 'M' || e.key === 'm') {
+                // user wants to mute or unmute
+                toggleMute();
+            }
+
+            if (e.key === 'P' || e.key === 'p') {
+                togglePause();
+            }
+        });
+
+        // Move the frog and play jump sound
+        function moveFrog(dx, dy) {
+            frog.x += dx;
+            frog.y += dy;
+
+            // Ensure frog is within canvas boundaries
+            if (frog.x < 0) frog.x = 0;
+            if (frog.x > canvas.width - gridSize) frog.x = canvas.width - gridSize;
+            if (frog.y < 0) frog.y = 0;
+            if (frog.y > canvas.height - gridSize) frog.y = canvas.height - gridSize;
+
+            playSound(jumpSound);
+        }
+
+        // Play a sound if not muted
+        function playSound(sound) {
+            if (!isMuted) {
+                sound.currentTime = 0; // Reset to start
+                sound.play();
+            }
+        }
+
+        // Toggle sound on and off
+        function toggleMute() {
+            isMuted = !isMuted;
+            gameOverSound.muted = isMuted;
+            waterSound.muted = isMuted;
+            jumpSound.muted = isMuted;
+            tadaaSound.muted = isMuted;
+            message = isMuted ? "Muted" : ""; // Show "Muted" message when muted
+        }
+
+        // Toggle pause state
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                message = "Paused";
+            } else {
+                message = "";
+            }
+            drawMessage(); // Ensure message is shown immediately
+        }
+
+        // Draw the top safe area (bushes)
+        function drawSafeArea() {
+            ctx.fillStyle = "#228B22"; // Forest green for the safe area
+            ctx.fillRect(0, 0, canvas.width, gridSize);
+            ctx.drawImage(bushImg, 0, 0, canvas.width, gridSize); // Draw bushes
+        }
+
+        // Draw the river
+        function drawRiver() {
+            ctx.fillStyle = "#1E90FF"; // Blue color for water
+            ctx.fillRect(0, gridSize, canvas.width, 5 * gridSize);
+        }
+
+        // Draw the road
+        function drawRoad() {
+            ctx.fillStyle = "#696969"; // Grey color for road
+            ctx.fillRect(0, 6 * gridSize, canvas.width, 5 * gridSize);
+
+            // Add road markings
+            ctx.strokeStyle = "#FFF";
+            ctx.lineWidth = 4;
+            for (let i = 0; i < canvas.width; i += 60) {
+                ctx.beginPath();
+                ctx.moveTo(i, 8 * gridSize + gridSize / 2);
+                ctx.lineTo(i + 30, 8 * gridSize + gridSize / 2);
+                ctx.stroke();
+            }
+        }
+
+        // Draw the wall between the road and the river
+        function drawWall() {
+            wallElements.forEach(el => {
+                ctx.drawImage(wallImg, el.x, el.y, gridSize, gridSize);
             });
+        }
 
-            // Error handling for audio
-            gameOverSound.onerror = () => console.error(`Failed to load audio: ${gameOverSound.src}`);
-            waterSound.onerror = () => console.error(`Failed to load audio: ${waterSound.src}`);
-            jumpSound.onerror = () => console.error(`Failed to load audio: ${jumpSound.src}`);
-            tadaaSound.onerror = () => console.error(`Failed to load audio: ${tadaaSound.src}`);
+        // Draw the bottom area below the road
+        function drawBottomArea() {
+            ctx.fillStyle = "#2E8B57"; // Sea green color for bottom area
+            ctx.fillRect(0, 11 * gridSize, canvas.width, gridSize);
+        }
 
-            // Wait for all images to load before starting the game
-            //   due to MVS 3.8 HTTPD web server being a bit slow
-            //    it's 53 year old tech after all....
-            let imagesLoaded = 0;
-            images.forEach((img) => {
-               img.onload = () => {
-                  imagesLoaded++;
-                  if (imagesLoaded === images.length) {
-                     startGame(); // Start the game after all images are loaded
-                  }
-               };
+        // Draw the game controls legend
+  function drawLegend() {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "16px Arial";
+            ctx.fillText("Arrows: Move | R: Restart | M: Mute | P: Pause", 10, canvas.height - 20);
+ }
+
+        // Draw the version number and level
+    function drawInfo() {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "16px Arial";
+            ctx.fillText("Version: " + version, 10, 20);
+             // Display level on the upper right corner
+            ctx.fillText("Level: " + level, canvas.width - 100, 20);
+            // Display the timer countdown in the center       
+            ctx.fillText("Time: " + Math.ceil(countdown) + "s", canvas.width / 2 - 50, 20); 
+        }
+
+        // Draw the message in the center of the canvas
+        function drawMessage() {
+            ctx.fillStyle = "#FFFF00"; // Yellow color for message
+            ctx.font = "30px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+            ctx.textAlign = "left"; // Reset alignment
+        }
+
+        // Increase the speed of elements by 5%
+        function increaseSpeed() {
+            riverElements.forEach(el => {
+                el.speed *= 1.05; // Increase speed by 5%
             });
-
-            // Prevent default behavior of arrow keys 
-            // in Safari the arrow keys will move the whole canvas....sheesh
-            window.addEventListener("keydown", (e) => {
-               if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-                  e.preventDefault();
-               }
+            roadElements.forEach(el => {
+                el.speed *= 1.05; // Increase speed by 5%
             });
+        }
 
-            // Create wall elements between the road and river
-            const wallElements = [];
-            for (let x = 0; x < canvas.width; x += gridSize) {
-               wallElements.push({
-                  x: x,
-                  y: 6 * gridSize
-               });
-            }
+        // Main game loop
+        function gameLoop() {
+            if (!isGameOver && !isPaused) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
 
-            // Create a river object, make sure no overlap
-            function createRiverObject(type, y, elements) {
-               let x;
-               do {
-                  x = Math.random() * canvas.width;
-               } while (isTooClose(x, y, elements));
-               return {
-                  type,
-                  x,
-                  y,
-                  speed: objectSpeeds[type]
-               };
-            }
-
-            // Create a road object ensuring no overlap
-            function createRoadObject(type, y, elements) {
-               let x;
-               do {
-                  x = Math.random() * canvas.width;
-               } while (isTooClose(x, y, elements));
-               return {
-                  type,
-                  x,
-                  y,
-                  speed: objectSpeeds[type]
-               };
-            }
-
-            // Check if the new object  placed is to close to previous object
-            function isTooClose(x, y, elements) {
-               return elements.some(el => Math.abs(el.x - x) < 100 && el.y === y);
-            }
-
-            // Put grass and logs on river
-            let riverElements = createRiverElements();
-
-            // Put cars and trucks on road
-            let roadElements = createRoadElements();
-
-            // Create river elements (logs, grass, waves) with increased frequency and initial speeds
-            function createRiverElements() {
-               const elements = [];
-               // Create grass for the top lane
-               for (let i = 0; i < appearanceFrequency.grass; i++) {
-                  elements.push(createRiverObject('grass', gridSize, elements)); // Top lane grass
-               }
-               // Create logs and grass for the other lanes
-               for (let i = 0; i < appearanceFrequency.log; i++) {
-                  elements.push(createRiverObject('log', 2 * gridSize + (i % 2) * 2 * gridSize, elements));
-               }
-               for (let i = 0; i < appearanceFrequency.grass; i++) {
-                  elements.push(createRiverObject('grass', 3 * gridSize + (i % 2) * 2 * gridSize, elements));
-               }
-               return elements;
-            }
-
-            // Create road elements (cars, trucks) with separate lanes and initial speeds
-            function createRoadElements() {
-               const elements = [];
-               for (let i = 0; i < appearanceFrequency.car; i++) {
-                  elements.push(createRoadObject('car', 7 * gridSize + (i % 2) * 2 * gridSize, elements));
-               }
-               for (let i = 0; i < appearanceFrequency.truck; i++) {
-                  elements.push(createRoadObject('truck', 7 * gridSize + ((i % 2) * 2 + 1) * gridSize, elements));
-               }
-               return elements;
-            }
-
-            // Keyboard input to move the frog and control game
-            document.addEventListener('keydown', (e) => {
-               if (!isGameOver && !isPaused) {
-                  if (e.key === 'ArrowUp') moveFrog(0, -frogSpeed);
-                  if (e.key === 'ArrowDown') moveFrog(0, frogSpeed);
-                  if (e.key === 'ArrowLeft') moveFrog(-frogSpeed, 0);
-                  if (e.key === 'ArrowRight') moveFrog(frogSpeed, 0);
-               }
-               else if (isGameOver) {
-                  if (e.key === 'R' || e.key === 'r') {
-                     restartGame();
-                  }
-               }
-
-               if (e.key === 'M' || e.key === 'm') {
-                  // user wants to mute or unmute
-                  toggleMute();
-               }
-
-               if (e.key === 'P' || e.key === 'p') {
-                  togglePause();
-               }
-            });
-
-            // Move the frog and play jump sound
-            function moveFrog(dx, dy) {
-               frog.x += dx;
-               frog.y += dy;
-
-               // Ensure frog is within canvas boundaries
-               if (frog.x < 0) frog.x = 0;
-               if (frog.x > canvas.width - gridSize) frog.x = canvas.width - gridSize;
-               if (frog.y < 0) frog.y = 0;
-               if (frog.y > canvas.height - gridSize) frog.y = canvas.height - gridSize;
-
-               playSound(jumpSound);
-            }
-
-            // Play a sound if not muted
-            function playSound(sound) {
-               if (!isMuted) {
-                  sound.currentTime = 0; // Reset to start
-                  sound.play();
-               }
-            }
-
-            // Toggle sound on and off
-            function toggleMute() {
-               isMuted = !isMuted;
-               gameOverSound.muted = isMuted;
-               waterSound.muted = isMuted;
-               jumpSound.muted = isMuted;
-               tadaaSound.muted = isMuted;
-               message = isMuted ? "Muted" : ""; // Show "Muted" message when muted
-            }
-
-            // Toggle pause state
-            function togglePause() {
-               isPaused = !isPaused;
-               if (isPaused) {
-                  message = "Paused";
-               }
-               else {
-                  message = "";
-               }
-               drawMessage(); // Ensure message is shown immediately
-            }
-
-            // Draw the top safe area (bushes)
-            function drawSafeArea() {
-               ctx.fillStyle = "#228B22"; // Forest green for the safe area
-               ctx.fillRect(0, 0, canvas.width, gridSize);
-               ctx.drawImage(bushImg, 0, 0, canvas.width, gridSize); // Draw bushes
-            }
-
-            // Draw the river
-            function drawRiver() {
-               ctx.fillStyle = "#1E90FF"; // Blue color for water
-               ctx.fillRect(0, gridSize, canvas.width, 5 * gridSize);
-            }
-
-            // Draw the road
-            function drawRoad() {
-               ctx.fillStyle = "#696969"; // Grey color for road
-               ctx.fillRect(0, 6 * gridSize, canvas.width, 5 * gridSize);
-
-               // Add road markings
-               ctx.strokeStyle = "#FFF";
-               ctx.lineWidth = 4;
-               for (let i = 0; i < canvas.width; i += 60) {
-                  ctx.beginPath();
-                  ctx.moveTo(i, 8 * gridSize + gridSize / 2);
-                  ctx.lineTo(i + 30, 8 * gridSize + gridSize / 2);
-                  ctx.stroke();
-               }
-            }
-
-            // Draw the wall between the road and the river
-            function drawWall() {
-               wallElements.forEach(el => {
-                  ctx.drawImage(wallImg, el.x, el.y, gridSize, gridSize);
-               });
-            }
-
-            // Draw the bottom area below the road
-            function drawBottomArea() {
-               ctx.fillStyle = "#2E8B57"; // Sea green color for bottom area
-               ctx.fillRect(0, 11 * gridSize, canvas.width, gridSize);
-            }
-
-            // Draw the game controls legend
-            function drawLegend() {
-               ctx.fillStyle = "#FFFFFF";
-               ctx.font = "16px Arial";
-               ctx.fillText("Arrows: Move | R: Restart | M: Mute | P: Pause", 10, canvas.height - 20);
-            }
-
-            // Draw the version number and level
-            function drawInfo() {
-               ctx.fillStyle = "#FFFFFF";
-               ctx.font = "16px Arial";
-               ctx.fillText("Version: " + version, 10, 20);
-               // Display level on the upper right corner
-               ctx.fillText("Level: " + level, canvas.width - 100, 20);
-               // Display the timer countdown in the center       
-               ctx.fillText("Time: " + Math.ceil(countdown) + "s", canvas.width / 2 - 50, 20);
-            }
-
-            // Draw the message in the center of the canvas
-            function drawMessage() {
-               ctx.fillStyle = "#FFFF00"; // Yellow color for message
-               ctx.font = "30px Arial";
-               ctx.textAlign = "center";
-               ctx.fillText(message, canvas.width / 2, canvas.height / 2);
-               ctx.textAlign = "left"; // Reset alignment
-            }
-
-            // Increase the speed of elements by 5%
-            function increaseSpeed() {
-               riverElements.forEach(el => {
-                  el.speed *= 1.05; // Increase speed by 5%
-               });
-               roadElements.forEach(el => {
-                  el.speed *= 1.05; // Increase speed by 5%
-               });
-            }
-
-            // Main game loop
-            function gameLoop() {
-               if (!isGameOver && !isPaused) {
-                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Draw the safe area, river, road, wall, bottom area, legend, version number, and message
+                drawSafeArea();
+                drawRiver();
+                drawRoad();
+                drawWall();
+                drawBottomArea();
+                drawLegend();
+                drawInfo();
+                drawFooterText(); // for copyright text
 
 
-                  // Draw the safe area, river, road, wall, bottom area, legend, version number, and message
-                  drawSafeArea();
-                  drawRiver();
-                  drawRoad();
-                  drawWall();
-                  drawBottomArea();
-                  drawLegend();
-                  drawInfo();
-                  drawFooterText(); // for copyright text
-
-
-                  // Draw elements on the river
-                  riverElements.forEach(el => {
-                     if (el.y >= gridSize && el.y < 6 * gridSize) { // Ensure only on river area
+                // Draw elements on the river
+                riverElements.forEach(el => {
+                    if (el.y >= gridSize && el.y < 6 * gridSize) { // Ensure only on river area
                         if (el.type === 'log') ctx.drawImage(logImg, el.x, el.y, gridSize, gridSize);
                         if (el.type === 'grass') ctx.drawImage(grassImg, el.x, el.y, gridSize, gridSize);
                         if (el.type === 'wave') ctx.drawImage(waveImg, el.x, el.y, gridSize, gridSize);
 
                         // Move elements (except waves which are stationary)
                         if (el.type !== 'wave') {
-                           el.x += el.speed;
-                           if (el.x < -gridSize) el.x = canvas.width;
-                           if (el.x > canvas.width) el.x = -gridSize;
+                            el.x += el.speed;
+                            if (el.x < -gridSize) el.x = canvas.width;
+                            if (el.x > canvas.width) el.x = -gridSize;
                         }
-                     }
-                  });
+                    }
+                });
 
-                  // Draw elements on the road
-                  roadElements.forEach(el => {
-                     if (el.y >= 6 * gridSize && el.y < 11 * gridSize) { // Ensure only on road area
+                // Draw elements on the road
+                roadElements.forEach(el => {
+                    if (el.y >= 6 * gridSize && el.y < 11 * gridSize) { // Ensure only on road area
                         if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize * 1.33, gridSize); // Car is 33% larger
                         if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2, gridSize); // Trucks are longer
 
@@ -436,163 +407,158 @@ style >
                         el.x += el.speed;
                         if (el.x < -gridSize * 2) el.x = canvas.width;
                         if (el.x > canvas.width) el.x = -gridSize * 2;
-                     }
-                  });
+                    }
+                });
 
-                  // Draw frog
-                  ctx.drawImage(frogImg, frog.x, frog.y, gridSize, gridSize);
+                // Draw frog
+                ctx.drawImage(frogImg, frog.x, frog.y, gridSize, gridSize);
 
-                  // Collision detection
-                  let safeOnLogOrGrass = false;
-                  riverElements.forEach(el => {
-                     if (isColliding(frog, el)) {
+                // Collision detection
+                let safeOnLogOrGrass = false;
+                riverElements.forEach(el => {
+                    if (isColliding(frog, el)) {
                         if (el.type === 'log' || el.type === 'grass') {
-                           frog.x += el.speed; // Move with the log or grass
-                           safeOnLogOrGrass = true;
+                            frog.x += el.speed; // Move with the log or grass
+                            safeOnLogOrGrass = true;
                         }
-                     }
-                  });
+                    }
+                });
 
-                  roadElements.forEach(el => {
-                     if (isColliding(frog, el)) {
+                roadElements.forEach(el => {
+                    if (isColliding(frog, el)) {
                         message = "Traffic hit!";
                         showMessageAndRestart();
-                     }
-                  });
+                    }
+                });
 
-                  // Check if frog is in the river and not on log/grass
-                  if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {
-                     message = "Into the river!";
-                     playSound(waterSound);
-                     showMessageAndRestart();
-                  }
+                // Check if frog is in the river and not on log/grass
+                if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {
+                    message = "Into the river!";
+                    playSound(waterSound);
+                    showMessageAndRestart();
+                }
 
-                  // Check if frog reaches the top safe area (win condition)
-                  if (frog.y <= 0 && !levelComplete) {
-                     message = "You made it!";
-                     let increase = countdown * 10;
-                     points += Math.floor(+increase); //integer only
-                     playSound(tadaaSound);
-                     message = "You made it!";
-                     drawMessage();
-
-                     levelComplete = true; // Mark level as complete
-                     setTimeout(() => {
+                // Check if frog reaches the top safe area (win condition)
+                if (frog.y <= 0 && !levelComplete) {
+                    message = "You made it!";
+                    let increase = countdown * 10;
+                    points +=  Math.floor(+increase); //integer only
+                    playSound(tadaaSound);
+                    message = "You made it!";
+                    drawMessage();
+                     
+                    levelComplete = true; // Mark level as complete
+                    setTimeout(() => {
                         if (lives > 0) {
-                           increaseSpeed(); // Increase speed for the next level
-                           level++; // Increase the level
-
-                           resetGame(false); // Reset without speed accumulation
+                            increaseSpeed(); // Increase speed for the next level
+                            level++; // Increase the level
+                            
+                            resetGame(false); // Reset without speed accumulation
                         }
-                     }, 2000);
-                  }
+                    }, 2000);
+                }
 
-                  // Decrease countdown timer and check for timeout
-                  countdown -= 1 / 60; // Decrease by 1 second every 60 frames
-                  if (countdown <= 0) {
-                     message = "Too slow! You lost 1 life!";
-                     showMessageAndRestart(); // Display message and restart the game
-                  }
+                // Decrease countdown timer and check for timeout
+                countdown -= 1 / 60; // Decrease by 1 second every 60 frames
+                if (countdown <= 0) {
+                    message = "Too slow! You lost 1 life!";
+                    showMessageAndRestart(); // Display message and restart the game
+                }
 
-                  // Draw lives and points
-                  ctx.fillStyle = "#FFFFFF";
-                  ctx.font = "20px Arial";
-                  ctx.fillText("Lives: " + lives, canvas.width - 150, canvas.height - 40);
-                  ctx.fillText("Points: " + points, canvas.width - 150, canvas.height - 10);
-               }
-
-               // Draw the message if the game is paused or game over
-               if (isPaused || isGameOver) {
-                  drawMessage();
-               }
-
-               requestAnimationFrame(gameLoop);
+                // Draw lives and points
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "20px Arial";
+                ctx.fillText("Lives: " + lives, canvas.width - 150, canvas.height - 40);
+                ctx.fillText("Points: " + points, canvas.width - 150, canvas.height - 10);
             }
 
-            // Reset the game elements to their initial positions and speeds
-            function resetGame(resetSpeeds = true) {
-               frog = {
-                  x: 5 * gridSize,
-                  y: 11 * gridSize
-               };
-               message = "";
-               levelComplete = false; // Allow new level to be completed
-               gameOverPlayed = false; // Reset game over sound play state
-               countdown = initialTimer; // Reset the timer
-
-               if (resetSpeeds) {
-                  riverElements = createRiverElements();
-                  roadElements = createRoadElements();
-               }
+            // Draw the message if the game is paused or game over
+            if (isPaused || isGameOver) {
+                drawMessage();
             }
 
-            function drawFooterText() {
-               ctx.fillStyle = "#FFFFFF";
-               ctx.font = "14px Arial";
-               ctx.textAlign = "center";
-               ctx.fillText("(c) 2024 hotdog studios", canvas.width / 2, canvas.height - 10);
-               ctx.textAlign = "left"; // Reset alignment
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Reset the game elements to their initial positions and speeds
+        function resetGame(resetSpeeds = true) {
+            frog = { x: 5 * gridSize, y: 11 * gridSize };
+            message = "";
+            levelComplete = false; // Allow new level to be completed
+            gameOverPlayed = false; // Reset game over sound play state
+            countdown = initialTimer; // Reset the timer
+
+            if (resetSpeeds) {
+                riverElements = createRiverElements();
+                roadElements = createRoadElements();
+            }
+        }
+      function drawFooterText() {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("(c) 2024 hotdog studios", canvas.width / 2, canvas.height - 10);
+        ctx.textAlign = "left"; // Reset alignment
+    }
+
+        function loseLife() {
+            if (lives > 0) { // Prevent lives from going below zero
+                lives--;
             }
 
-            function loseLife() {
-               if (lives > 0) { // Prevent lives from going below zero
-                  lives--;
-               }
+             if (lives <= 0) { // When all lives are lost
+              message = "Game over!";
+              drawMessage(); // Display game over message   
+              playSound(gameOverSound);
+              
+              isGameOver = true; // Set game over state to true
 
-               if (lives <= 0) { // When all lives are lost
-                  message = "Game over!";
-                  drawMessage(); // Display game over message   
-                  playSound(gameOverSound);
-
-                  isGameOver = true; // Set game over state to true
-
-                  // Restart game after displaying message for 3 seconds
-                  setTimeout(() => {
-                     restartGame(); // Restart the game from scratch
-                  }, 3000);
-               }
-               else {
-                  resetGame(false); // Reset game elements without changing speed
-               }
+               // Restart game after displaying message for 3 seconds
+              setTimeout(() => {
+                  restartGame(); // Restart the game from scratch
+               }, 3000);
+              } else {
+                 resetGame(false); // Reset game elements without changing speed
             }
+           }
 
-            function showMessageAndRestart() {
-               isGameOver = true;
-               setTimeout(() => {
-                  loseLife();
-                  isGameOver = false;
-               }, 2000);
-            }
+        function showMessageAndRestart() {
+            isGameOver = true;
+            setTimeout(() => {
+                loseLife();
+                isGameOver = false;
+            }, 2000);
+        }
 
-            function restartGame() {
-               isGameOver = false;
-               isPaused = false;
-               lives = 5;
-               points = 0;
-               level = 1;
-               objectSpeeds = {
-                  car: 4, // Car speed
-                  truck: -3.2, // Truck speed
-                  grass: 2.5, // Grass speed
-                  log: -2 // Log speed
-               };
-               gameOverPlayed = false; // Reset game over sound play state
-               resetGame(); // Full reset with initial speeds
-               gameLoop();
-            }
+        function restartGame() {
+            isGameOver = false;
+            isPaused = false;
+            lives = 5;
+            points = 0;
+            level = 1;
+            objectSpeeds = {
+              car: 4, // Car speed
+              truck: -3.2, // Truck speed
+              grass: 2.5, // Grass speed
+              log: -2 // Log speed
+             };
+            gameOverPlayed = false; // Reset game over sound play state
+            resetGame(); // Full reset with initial speeds
+            gameLoop();
+        }
 
-            function isColliding(rect1, rect2) {
-               return rect1.x < rect2.x + gridSize &&
-                  rect1.x + gridSize > rect2.x &&
-                  rect1.y < rect2.y + gridSize &&
-                  rect1.y + gridSize > rect2.y;
-            }
+        function isColliding(rect1, rect2) {
+            return rect1.x < rect2.x + gridSize &&
+                   rect1.x + gridSize > rect2.x &&
+                   rect1.y < rect2.y + gridSize &&
+                   rect1.y + gridSize > rect2.y;
+        }
 
-            // Start the game when images are loaded
-            function startGame() {
-               console.log("All images loaded. Starting the game..."); // Debugging image load
-               gameLoop();
-            } <
-            /script> < /
-            body > <
-               /html>
+        // Start the game when images are loaded
+        function startGame() {
+            console.log("All images loaded. Starting the game..."); // Debugging image load
+            gameLoop();
+        }
+    </script>
+</body>
+</html>

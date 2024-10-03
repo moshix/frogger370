@@ -54,6 +54,9 @@
         // v2.6 tadaa sound
         // v2.7 fix game over logic
         // v2.8 fix some syntax stuff with constants
+        // v2.9 some speedup issues need fixing
+
+        const version = "v2.8"; // Version number
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -67,7 +70,6 @@
         const jumpSound = document.getElementById("jumpSound");
         const tadaaSound = document.getElementById("tadaaSound");
 
-        const version = "v2.8"; // Version number
 
         // Global settings for appearance and speed
         const appearanceFrequency = {
@@ -85,6 +87,8 @@
         };
 
         // Game variables
+        let lastTime = Date.now(); // for wall clock time instead of frame rate!
+        const speedupConstant = 1.00 // how much to speed up after each level
         const gridSize = 50; // Size of each grid cell
         const frogSpeed = gridSize;
         const initialTimer = 22; // Global timer for crossing the road and river
@@ -357,10 +361,10 @@
         // Increase the speed of elements by 5%
         function increaseSpeed() {
             riverElements.forEach(el => {
-                el.speed *= 1.05; // Increase speed by 5%
+                el.speed *= speedupConstant; // Increase speed by 5%
             });
             roadElements.forEach(el => {
-                el.speed *= 1.05; // Increase speed by 5%
+                el.speed *= speedupConstant; // Increase speed by 5%
             });
         }
 
@@ -458,10 +462,16 @@
                     }, 2000);
                 }
 
+
+                // this required to use wall clock time instead of frame rate time
+                const currentTime = Date.now();
+                const deltaTime = (currentTime - lastTime) / 1000; // Time difference in seconds
+                lastTime = currentTime;
+
                 // Decrease countdown timer and check for timeout
-                countdown -= 1 / 60; // Decrease by 1 second every 60 frames
+                countdown -= deltaTime;
                 if (countdown <= 0) {
-                    message = "Too slow! You lost 1 life!";
+                    message = "*** Too slow! You lost 1 life! ***";
                     showMessageAndRestart(); // Display message and restart the game
                 }
 

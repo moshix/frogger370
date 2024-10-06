@@ -55,8 +55,9 @@
         // v2.7 fix game over logic
         // v2.8 fix some syntax stuff with constants
         // v2.9 some speedup issues need fixing
+        // v3.0 animate based on time instead of frame rateee
 
-        const version = "v2.8"; // Version number
+        const version = "v3.0"; // Version number
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -87,13 +88,17 @@
         };
 
         // Game variables
+        let pTime = 0; // for time-based animation
+        let cTime = Date.now(); // same as above
+        let previousTime = 0; // for timer animation
+        let currentTime = Date.now(); // for timer animation
         let lastTime = Date.now(); // for wall clock time instead of frame rate!
-        const speedupConstant = 1.00 // how much to speed up after each level
+        const speedupConstant = 1.05 // how much to speed up after each level
         const gridSize = 50; // Size of each grid cell
         const frogSpeed = gridSize;
-        const initialTimer = 22; // Global timer for crossing the road and river
+        const initialTimer = 13; // Global timer for crossing the road and river
         let frog = { x: 5 * gridSize, y: 11 * gridSize }; // Starting position of the frog
-        let lives = 5;
+        let lives = 3;
         let points = 0;
         let message = "";
         let isGameOver = false;
@@ -361,15 +366,22 @@
         // Increase the speed of elements by 5%
         function increaseSpeed() {
             riverElements.forEach(el => {
-                el.speed *= speedupConstant; // Increase speed by 5%
+                el.speed *= speedupConstant; // Increase speed
             });
             roadElements.forEach(el => {
-                el.speed *= speedupConstant; // Increase speed by 5%
+                el.speed *= speedupConstant; // Increase speed 
             });
         }
 
         // Main game loop
-        function gameLoop() {
+        //const deltaTime = (currentTime - lastTime) / 1000; // Time difference in seconds
+        function gameLoop(cTime) {
+            cTime = Date.now();
+            if (!pTime) pTime = cTime;
+            dTime = (cTime - pTime) / 10;
+            pTime = cTime;
+//           console.log('ctime: ',cTime, '  - pTime: ',pTime);
+
             if (!isGameOver && !isPaused) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
@@ -394,7 +406,7 @@
 
                         // Move elements (except waves which are stationary)
                         if (el.type !== 'wave') {
-                            el.x += el.speed;
+                            el.x += el.speed * dTime ;
                             if (el.x < -gridSize) el.x = canvas.width;
                             if (el.x > canvas.width) el.x = -gridSize;
                         }
@@ -408,7 +420,7 @@
                         if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2, gridSize); // Trucks are longer
 
                         // Move elements
-                        el.x += el.speed;
+                        el.x += el.speed *dTime;
                         if (el.x < -gridSize * 2) el.x = canvas.width;
                         if (el.x > canvas.width) el.x = -gridSize * 2;
                     }
@@ -422,7 +434,7 @@
                 riverElements.forEach(el => {
                     if (isColliding(frog, el)) {
                         if (el.type === 'log' || el.type === 'grass') {
-                            frog.x += el.speed; // Move with the log or grass
+                            frog.x += el.speed *dTime; // Move with the log or grass
                             safeOnLogOrGrass = true;
                         }
                     }

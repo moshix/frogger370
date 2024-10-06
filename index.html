@@ -400,10 +400,20 @@
 
                 // Draw elements on the river
                 riverElements.forEach(el => {
+                    
+                   const wavePositions = [
+                       { x: 100, y: 2 * gridSize },
+                       { x: 300, y: 3 * gridSize },
+                       { x: 500, y: 4 * gridSize },
+                       { x: 700, y: 5 * gridSize }
+                   ];
+
                     if (el.y >= gridSize && el.y < 6 * gridSize) { // Ensure only on river area
                         if (el.type === 'log') ctx.drawImage(logImg, el.x, el.y, gridSize, gridSize);
                         if (el.type === 'grass') ctx.drawImage(grassImg, el.x, el.y, gridSize, gridSize);
-                        if (el.type === 'wave') ctx.drawImage(waveImg, el.x, el.y, gridSize, gridSize);
+                        //if (el.type === 'wave') ctx.drawImage(waveImg, el.x, el.y, gridSize, gridSize);
+                        //if (el.type === 'wave') drawWaves();
+                        if (el.type === 'wave') ctx.drawImage(waveImg, 100, 2, gridSize, gridSize);
 
                         // Move elements (except waves which are stationary)
                         if (el.type !== 'wave') {
@@ -413,6 +423,7 @@
                         }
                     }
                 });
+
 
                 // Draw elements on the road
                 roadElements.forEach(el => {
@@ -516,6 +527,14 @@
                 roadElements = createRoadElements();
             }
         }
+
+       function drawWaves() {
+           wavePositions.forEach(pos => {
+               ctx.drawImage(waveImg, pos.x, pos.y, gridSize, gridSize);
+           });
+       }
+
+
       function drawFooterText() {
         ctx.fillStyle = "#FFFFFF";
         ctx.font = "14px Arial";

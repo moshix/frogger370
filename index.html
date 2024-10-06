@@ -57,8 +57,9 @@
         // v2.9 some speedup issues need fixing
         // v3.0 animate based on time instead of frame rateee
         // v3.1 small cosmetic improvements
+        // v3.2 improved collision detection
 
-        const version = "v3.1"; // Version number
+        const version = "v3.2"; // Version number
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -459,8 +460,9 @@
                     }
                 });
 
-                // Check if frog is in the river and not on log/grass
-                if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {
+                if (frog.y < 6 * gridSize && frog.y > gridSize && 
+                    !riverElements.some(el => (el.type === 'log' || el.type === 'grass') &&
+                    (frog.x + gridSize > el.x && frog.x < el.x + gridSize && frog.y === el.y))) {
                     message = "Into the river!";
                     playSound(waterSound);
                     showMessageAndRestart();
@@ -604,3 +606,4 @@
     </script>
 </body>
 </html>
+

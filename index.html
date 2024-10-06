@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frogger Game</title>
+    <title>Frogger/370</title>
     <style>
         body {
             margin: 0;
@@ -56,8 +56,9 @@
         // v2.8 fix some syntax stuff with constants
         // v2.9 some speedup issues need fixing
         // v3.0 animate based on time instead of frame rateee
+        // v3.1 small cosmetic improvements
 
-        const version = "v3.0"; // Version number
+        const version = "v3.1"; // Version number
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -97,7 +98,7 @@
         const gridSize = 50; // Size of each grid cell
         const frogSpeed = gridSize;
         const initialTimer = 18; // Global timer for crossing the road and river
-        let frog = { x: 5 * gridSize, y: 11 * gridSize }; // Starting position of the frog
+        let frog = { x: 13 * gridSize, y: 11 * gridSize }; // Starting position of the frog
         let lives = 3;
         let points = 0;
         let message = "";
@@ -235,13 +236,14 @@
                 if (e.key === 'ArrowDown') moveFrog(0, frogSpeed);
                 if (e.key === 'ArrowLeft') moveFrog(-frogSpeed, 0);
                 if (e.key === 'ArrowRight') moveFrog(frogSpeed, 0);
-            } else if (isGameOver) {
-                if (e.key === 'R' || e.key === 'r') {
+                }
+
+            if (e.key === 'R' || e.key === 'r') {
                     restartGame();
                 }
-            }
-
-            if (e.key === 'M' || e.key === 'm') {
+               
+             
+             if (e.key === 'M' || e.key === 'm') {
                 // user wants to mute or unmute
                 toggleMute();
             }
@@ -356,14 +358,14 @@
 
         // Draw the message in the center of the canvas
         function drawMessage() {
-            ctx.fillStyle = "#FFFF00"; // Yellow color for message
+            ctx.fillStyle = "#FFFFFF"; // white message
             ctx.font = "30px Arial";
             ctx.textAlign = "center";
             ctx.fillText(message, canvas.width / 2, canvas.height / 2);
             ctx.textAlign = "left"; // Reset alignment
         }
 
-        // Increase the speed of elements by 5%
+        // Increase the speed of elements
         function increaseSpeed() {
             riverElements.forEach(el => {
                 el.speed *= speedupConstant; // Increase speed
@@ -374,13 +376,12 @@
         }
 
         // Main game loop
-        //const deltaTime = (currentTime - lastTime) / 1000; // Time difference in seconds
         function gameLoop(cTime) {
             cTime = Date.now();
             if (!pTime) pTime = cTime;
             dTime = (cTime - pTime) / 10;
             pTime = cTime;
-//           console.log('ctime: ',cTime, '  - pTime: ',pTime);
+            //console.log('ctime: ',cTime, '  - pTime: ',pTime);
 
             if (!isGameOver && !isPaused) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -442,7 +443,7 @@
 
                 roadElements.forEach(el => {
                     if (isColliding(frog, el)) {
-                        message = "Traffic hit!";
+                        message = "Hit by traffic!!";
                         showMessageAndRestart();
                     }
                 });
@@ -490,8 +491,8 @@
                 // Draw lives and points
                 ctx.fillStyle = "#FFFFFF";
                 ctx.font = "20px Arial";
-                ctx.fillText("Lives: " + lives, canvas.width - 150, canvas.height - 40);
-                ctx.fillText("Points: " + points, canvas.width - 150, canvas.height - 10);
+                ctx.fillText("Lives: " + lives, canvas.width - 150, canvas.height - 32);
+                ctx.fillText("Points: " + points, canvas.width - 150, canvas.height - 9);
             }
 
             // Draw the message if the game is paused or game over

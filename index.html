@@ -59,8 +59,9 @@
         // v3.1 small cosmetic improvements
         // v3.2 improved collision detection
         // v3.2.1 a bit slower objects
+        // v3.3 better river detection system
 
-        const version = "v3.2.1"; // Version number
+        const version = "v3.3"; // Version number
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -82,7 +83,6 @@
             grass: 5, // Number of grass per river lane
             log: 5 // Number of logs per river lane
         };
-
         let objectSpeeds = {
             car: 3.4, // Car speed
             truck: -3.0, // Truck speed
@@ -445,14 +445,25 @@
 
                 // Collision detection
                 let safeOnLogOrGrass = false;
-                riverElements.forEach(el => {
-                    if (isColliding(frog, el)) {
-                        if (el.type === 'log' || el.type === 'grass') {
-                            frog.x += el.speed *dTime; // Move with the log or grass
-                            safeOnLogOrGrass = true;
-                        }
+
+                // Loop through river elements to check if frog is on a river element
+                for (let i = 0; i < riverElements.length; i++) {
+                    let el = riverElements[i];
+                    if (isOnRiverElement(frog, riverElements[i])) {
+                        safeOnLogOrGrass = true;
+                        frog.x += el.speed * dTime;
+                        break;  // Frog is safely on log or grass
                     }
-                });
+                }
+                
+                // Check if frog is in the river and not on log/grass
+                if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {
+                    message = "Into the river!";
+                    playSound(waterSound);
+                    showMessageAndRestart();
+                }
+
+
 
                 roadElements.forEach(el => {
                     if (isColliding(frog, el)) {
@@ -460,14 +471,6 @@
                         showMessageAndRestart();
                     }
                 });
-
-                if (frog.y < 6 * gridSize && frog.y > gridSize && 
-                    !riverElements.some(el => (el.type === 'log' || el.type === 'grass') &&
-                    (frog.x + gridSize > el.x && frog.x < el.x + gridSize && frog.y === el.y))) {
-                    message = "Into the river!";
-                    playSound(waterSound);
-                    showMessageAndRestart();
-                }
 
                 // Check if frog reaches the top safe area (win condition)
                 if (frog.y <= 0 && !levelComplete) {
@@ -517,9 +520,17 @@
             requestAnimationFrame(gameLoop);
         }
 
+
+
+            function isOnRiverElement(frog, el) {
+                // Check if frog is aligned on the same Y-axis as the river element (log or grass)
+                return frog.x + gridSize > el.x && frog.x < el.x + gridSize &&
+                       frog.y === el.y && (el.type === 'log' || el.type === 'grass');
+            }
+
         // Reset the game elements to their initial positions and speeds
         function resetGame(resetSpeeds = true) {
-            frog = { x: 5 * gridSize, y: 11 * gridSize };
+            frog = { x: 8 * gridSize, y: 11 * gridSize };
             message = "";
             levelComplete = false; // Allow new level to be completed
             gameOverPlayed = false; // Reset game over sound play state

@@ -23,7 +23,8 @@
     <audio id="jumpSound" src="jump.mp3"></audio>
     <audio id="tadaaSound" src="tadaa.mp3"></audio>
 
-    <a href="https://hits.seeyoufarm.com"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmoshix.github.io%2Ffrogger370%2F&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=true"/></a>
+    <a href="https://hits.seeyoufarm.com">
+<img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmoshix.github.io%2Ffrogger370%2F&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=true"/></a>
     
     <script>
         // Frogger game for the browser, and for MVS 3.8 TK4+
@@ -61,8 +62,9 @@
         // v3.2 improved collision detection
         // v3.2.1 a bit slower objects
         // v3.3 better river detection system
+        // v3.4 less time to finish a level with each new level
 
-        const version = "v3.3"; // Version number
+        const version = "v3.4"; // Version number
 
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -535,7 +537,7 @@
             message = "";
             levelComplete = false; // Allow new level to be completed
             gameOverPlayed = false; // Reset game over sound play state
-            countdown = initialTimer; // Reset the timer
+            countdown = initialTimer-1; // Reset the timer
 
             if (resetSpeeds) {
                 riverElements = createRiverElements();
@@ -590,7 +592,7 @@
         function restartGame() {
             isGameOver = false;
             isPaused = false;
-            lives = 5;
+            lives = 3;
             points = 0;
             level = 1;
             objectSpeeds = {
@@ -619,4 +621,3 @@
     </script>
 </body>
 </html>
-

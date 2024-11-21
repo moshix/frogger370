@@ -63,10 +63,12 @@
         // v3.2.1 a bit slower objects
         // v3.3 better river detection system
         // v3.4 less time to finish a level with each new level
+        // v3.5 fix abhorrent use of animationFrame
 
-        const version = "v3.4"; // Version number
+        const version = "v3.5"; // Version number
 
         const canvas = document.getElementById("gameCanvas");
+        let animationID; // for cancelling animationFrames
         const ctx = canvas.getContext("2d");
 
         // Adjust canvas width and height to match the full width of the browser
@@ -519,8 +521,8 @@
             if (isPaused || isGameOver) {
                 drawMessage();
             }
-
-            requestAnimationFrame(gameLoop);
+            cancelAnimationFrame(animationID); 
+            animationID = requestAnimationFrame(gameLoop);
         }
 
 

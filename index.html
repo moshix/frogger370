@@ -10,9 +10,10 @@
             background-color: #222;
         }
         #gameCanvas {
-            background-color: #ccc; /* Default background */
+            background-color: #ccc;
             border: 2px solid #000;
             display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -23,8 +24,6 @@
     <audio id="jumpSound" src="jump.mp3"></audio>
     <audio id="tadaaSound" src="tadaa.mp3"></audio>
 
-    <a href="https://hits.seeyoufarm.com">
-<img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmoshix.github.io%2Ffrogger370%2F&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=true"/></a>
     
     <script>
         // Frogger game for the browser, and for MVS 3.8 TK4+
@@ -64,15 +63,15 @@
         // v3.3 better river detection system
         // v3.4 less time to finish a level with each new level
         // v3.5 fix abhorrent use of animationFrame
+        // v3.6 and 3.7 canvas 4:3, and collision det improvement
 
-        const version = "v3.5"; // Version number
+        const version = "v3.7";
 
         const canvas = document.getElementById("gameCanvas");
         let animationID; // for cancelling animationFrames
         const ctx = canvas.getContext("2d");
 
-        // Adjust canvas width and height to match the full width of the browser
-        canvas.width = window.innerWidth;
+        canvas.width = 800;
         canvas.height = 600;
 
         const gameOverSound = document.getElementById("gameOverSound");
@@ -82,30 +81,31 @@
 
 
         // Global settings for appearance and speed
-        const appearanceFrequency = {
-            car: 6, // Number of cars per lane
-            truck:5, // Number of trucks per lane
-            grass: 5, // Number of grass per river lane
-            log: 5 // Number of logs per river lane
+        let appearanceFrequency = {
+            car: 6,
+            truck: 5,
+            grass: 5,
+            log: 5
         };
         let objectSpeeds = {
-            car: 3.4, // Car speed
-            truck: -3.0, // Truck speed
-            grass: 2.5, // Grass speed
-            log: -2.1 // Log speed
+            car: 1.53,
+            truck: -0.8,
+            grass: 1.3,
+            log: -0.6
         };
 
         // Game variables
-        let pTime = 0; // for time-based animation
-        let cTime = Date.now(); // same as above
-        let previousTime = 0; // for timer animation
-        let currentTime = Date.now(); // for timer animation
-        let lastTime = Date.now(); // for wall clock time instead of frame rate!
-        const speedupConstant = 1.05 // how much to speed up after each level
+        const TARGET_FPS = 60;
+        const FRAME_DURATION = 1000 / TARGET_FPS;
+        let lastFrameTime = 0;
+        let pTime = 0;
+        let dTime = 0;
+        let lastTime = 0;
+        const speedupConstant = 1.15
         const gridSize = 50; // Size of each grid cell
         const frogSpeed = gridSize;
         const initialTimer = 18; // Global timer for crossing the road and river
-        let frog = { x: 13 * gridSize, y: 11 * gridSize }; // Starting position of the frog
+        let frog = { x: 8 * gridSize, y: 11 * gridSize };
         let lives = 3;
         let points = 0;
         let message = "";
@@ -383,12 +383,18 @@
         }
 
         // Main game loop
-        function gameLoop(cTime) {
-            cTime = Date.now();
-            if (!pTime) pTime = cTime;
-            dTime = (cTime - pTime) / 10;
-            pTime = cTime;
-            //console.log('ctime: ',cTime, '  - pTime: ',pTime);
+        function gameLoop(timestamp) {
+            if (!timestamp) timestamp = performance.now();
+            const frameElapsed = timestamp - lastFrameTime;
+            if (frameElapsed < FRAME_DURATION) {
+                animationID = requestAnimationFrame(gameLoop);
+                return;
+            }
+            lastFrameTime = timestamp - (frameElapsed % FRAME_DURATION);
+
+            if (!pTime) pTime = timestamp;
+            dTime = (timestamp - pTime) / 10;
+            pTime = timestamp;
 
             if (!isGameOver && !isPaused) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -405,63 +411,55 @@
                 drawFooterText(); // for copyright text
 
 
-                // Draw elements on the river
+                // Check if frog is on a river platform BEFORE moving elements
+                let safeOnLogOrGrass = false;
+                let frogPlatform = null;
+                for (let i = 0; i < riverElements.length; i++) {
+                    if (isOnRiverElement(frog, riverElements[i])) {
+                        safeOnLogOrGrass = true;
+                        frogPlatform = riverElements[i];
+                        break;
+                    }
+                }
+
+                // Move river elements
                 riverElements.forEach(el => {
-                    
-                   const wavePositions = [
-                       { x: 100, y: 2 * gridSize },
-                       { x: 300, y: 3 * gridSize },
-                       { x: 500, y: 4 * gridSize },
-                       { x: 700, y: 5 * gridSize }
-                   ];
-
-                    if (el.y >= gridSize && el.y < 6 * gridSize) { // Ensure only on river area
-                        if (el.type === 'log') ctx.drawImage(logImg, el.x, el.y, gridSize, gridSize);
-                        if (el.type === 'grass') ctx.drawImage(grassImg, el.x, el.y, gridSize, gridSize);
-                        //if (el.type === 'wave') ctx.drawImage(waveImg, el.x, el.y, gridSize, gridSize);
-                        //if (el.type === 'wave') drawWaves();
-                        if (el.type === 'wave') ctx.drawImage(waveImg, 100, 2, gridSize, gridSize);
-
-                        // Move elements (except waves which are stationary)
-                        if (el.type !== 'wave') {
-                            el.x += el.speed * dTime ;
-                            if (el.x < -gridSize) el.x = canvas.width;
-                            if (el.x > canvas.width) el.x = -gridSize;
-                        }
+                    if (el.y >= gridSize && el.y < 6 * gridSize && el.type !== 'wave') {
+                        el.x += el.speed * dTime;
+                        if (el.x < -gridSize) el.x = canvas.width;
+                        if (el.x > canvas.width) el.x = -gridSize;
                     }
                 });
 
+                // Move frog with its platform
+                if (frogPlatform) {
+                    frog.x += frogPlatform.speed * dTime;
+                }
 
-                // Draw elements on the road
+                // Draw river elements at their new positions
+                riverElements.forEach(el => {
+                    if (el.y >= gridSize && el.y < 6 * gridSize) {
+                        if (el.type === 'log') ctx.drawImage(logImg, el.x, el.y, gridSize, gridSize);
+                        if (el.type === 'grass') ctx.drawImage(grassImg, el.x, el.y, gridSize, gridSize);
+                        if (el.type === 'wave') ctx.drawImage(waveImg, el.x, el.y, gridSize, gridSize);
+                    }
+                });
+
+                // Move and draw road elements
                 roadElements.forEach(el => {
-                    if (el.y >= 6 * gridSize && el.y < 11 * gridSize) { // Ensure only on road area
-                        if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize * 1.33, gridSize); // Car is 33% larger
-                        if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2, gridSize); // Trucks are longer
-
-                        // Move elements
-                        el.x += el.speed *dTime;
+                    if (el.y >= 6 * gridSize && el.y < 11 * gridSize) {
+                        el.x += el.speed * dTime;
                         if (el.x < -gridSize * 2) el.x = canvas.width;
                         if (el.x > canvas.width) el.x = -gridSize * 2;
+                        if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize * 1.33, gridSize);
+                        if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2, gridSize);
                     }
                 });
 
                 // Draw frog
                 ctx.drawImage(frogImg, frog.x, frog.y, gridSize, gridSize);
 
-                // Collision detection
-                let safeOnLogOrGrass = false;
-
-                // Loop through river elements to check if frog is on a river element
-                for (let i = 0; i < riverElements.length; i++) {
-                    let el = riverElements[i];
-                    if (isOnRiverElement(frog, riverElements[i])) {
-                        safeOnLogOrGrass = true;
-                        frog.x += el.speed * dTime;
-                        break;  // Frog is safely on log or grass
-                    }
-                }
-                
-                // Check if frog is in the river and not on log/grass
+                // Check if frog is in the river and not on a platform
                 if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {
                     message = "Into the river!";
                     playSound(waterSound);
@@ -489,21 +487,21 @@
                     levelComplete = true; // Mark level as complete
                     setTimeout(() => {
                         if (lives > 0) {
-                            increaseSpeed(); // Increase speed for the next level
-                            level++; // Increase the level
-                            
-                            resetGame(false); // Reset without speed accumulation
+                            increaseSpeed();
+                            level++;
+                            if (appearanceFrequency.grass > 1) appearanceFrequency.grass--;
+                            if (appearanceFrequency.log > 1) appearanceFrequency.log--;
+                            riverElements = createRiverElements();
+                            resetGame(false);
                         }
                     }, 2000);
                 }
 
 
-                // this required to use wall clock time instead of frame rate time
-                const currentTime = Date.now();
-                const deltaTime = (currentTime - lastTime) / 1000; // Time difference in seconds
-                lastTime = currentTime;
+                if (!lastTime) lastTime = timestamp;
+                const deltaTime = (timestamp - lastTime) / 1000;
+                lastTime = timestamp;
 
-                // Decrease countdown timer and check for timeout
                 countdown -= deltaTime;
                 if (countdown <= 0) {
                     message = "*** Too slow! You lost 1 life! ***";
@@ -517,9 +515,10 @@
                 ctx.fillText("Points: " + points, canvas.width - 150, canvas.height - 9);
             }
 
-            // Draw the message if the game is paused or game over
             if (isPaused || isGameOver) {
                 drawMessage();
+                pTime = 0;
+                lastTime = 0;
             }
             cancelAnimationFrame(animationID); 
             animationID = requestAnimationFrame(gameLoop);
@@ -528,9 +527,11 @@
 
 
             function isOnRiverElement(frog, el) {
-                // Check if frog is aligned on the same Y-axis as the river element (log or grass)
-                return frog.x + gridSize > el.x && frog.x < el.x + gridSize &&
-                       frog.y === el.y && (el.type === 'log' || el.type === 'grass');
+                if (frog.y !== el.y || (el.type !== 'log' && el.type !== 'grass')) return false;
+                const overlapStart = Math.max(frog.x, el.x);
+                const overlapEnd = Math.min(frog.x + gridSize, el.x + gridSize);
+                const overlap = overlapEnd - overlapStart;
+                return overlap > gridSize * 0.5;
             }
 
         // Reset the game elements to their initial positions and speeds
@@ -598,13 +599,19 @@
             points = 0;
             level = 1;
             objectSpeeds = {
-              car: 4, // Car speed
-              truck: -3.2, // Truck speed
-              grass: 2.5, // Grass speed
-              log: -2 // Log speed
+              car: 1.53,
+              truck: -0.8,
+              grass: 1.3,
+              log: -0.6
              };
-            gameOverPlayed = false; // Reset game over sound play state
-            resetGame(); // Full reset with initial speeds
+            appearanceFrequency = {
+              car: 6,
+              truck: 5,
+              grass: 5,
+              log: 5
+             };
+            gameOverPlayed = false;
+            resetGame();
             gameLoop();
         }
 

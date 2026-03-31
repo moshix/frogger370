@@ -505,13 +505,15 @@
                         el.x += el.speed * dTime;
                         if (el.x < -gridSize * 2) el.x = canvas.width;
                         if (el.x > canvas.width) el.x = -gridSize * 2;
-                        if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize * 1.33, gridSize);
-                        if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2, gridSize);
+                        if (el.type === 'car') ctx.drawImage(carImg, el.x, el.y, gridSize * 1.53, gridSize * 1.15);
+                        if (el.type === 'truck') ctx.drawImage(truckImg, el.x, el.y, gridSize * 2.3, gridSize * 1.15);
                     }
                 });
 
-                // Draw frog
-                ctx.drawImage(frogImg, frog.x, frog.y, gridSize, gridSize);
+                // Draw frog (scaled down 10%)
+                const frogSize = gridSize * 0.9;
+                const frogOffset = (gridSize - frogSize) / 2;
+                ctx.drawImage(frogImg, frog.x + frogOffset, frog.y + frogOffset, frogSize, frogSize);
 
                 // Check if frog is in the river and not on a platform
                 if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {

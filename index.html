@@ -21,8 +21,13 @@
     <canvas id="gameCanvas"></canvas>
     <audio id="gameOverSound" src="done.mp3"></audio>
     <audio id="waterSound" src="water.mp3"></audio>
-    <audio id="jumpSound" src="jump.mp3"></audio>
-    <audio id="tadaaSound" src="tadaa.mp3"></audio>
+    <audio id="jumpSound" src="hop.mp3"></audio>
+    <audio id="tadaaSound" src="landingSafe.mp3"></audio>
+    <audio id="bgMusic" src="songIntroAndMain_fix.mp3" loop></audio>
+    <audio id="insertCoinSound" src="insertCoin.mp3"></audio>
+    <audio id="runningOutOfTimeSound" src="runningOutOfTime.mp3"></audio>
+    <audio id="dieRoadSound" src="dieRoad.mp3"></audio>
+    <audio id="dieWaterSound" src="dieWater.mp3"></audio>
 
     
     <script>
@@ -78,6 +83,12 @@
         const waterSound = document.getElementById("waterSound");
         const jumpSound = document.getElementById("jumpSound");
         const tadaaSound = document.getElementById("tadaaSound");
+        const bgMusic = document.getElementById("bgMusic");
+        const insertCoinSound = document.getElementById("insertCoinSound");
+        const runningOutOfTimeSound = document.getElementById("runningOutOfTimeSound");
+        let runningOutOfTimePlayed = false;
+        const dieRoadSound = document.getElementById("dieRoadSound");
+        const dieWaterSound = document.getElementById("dieWaterSound");
 
 
         // Global settings for appearance and speed
@@ -150,6 +161,11 @@
         waterSound.onerror = () => console.error(`Failed to load audio: ${waterSound.src}`);
         jumpSound.onerror = () => console.error(`Failed to load audio: ${jumpSound.src}`);
         tadaaSound.onerror = () => console.error(`Failed to load audio: ${tadaaSound.src}`);
+        bgMusic.onerror = () => console.error(`Failed to load audio: ${bgMusic.src}`);
+        insertCoinSound.onerror = () => console.error(`Failed to load audio: ${insertCoinSound.src}`);
+        runningOutOfTimeSound.onerror = () => console.error(`Failed to load audio: ${runningOutOfTimeSound.src}`);
+        dieRoadSound.onerror = () => console.error(`Failed to load audio: ${dieRoadSound.src}`);
+        dieWaterSound.onerror = () => console.error(`Failed to load audio: ${dieWaterSound.src}`);
 
         // Wait for all images to load before starting the game
         //   due to MVS 3.8 HTTPD web server being a bit slow
@@ -289,6 +305,11 @@
             waterSound.muted = isMuted;
             jumpSound.muted = isMuted;
             tadaaSound.muted = isMuted;
+            bgMusic.muted = isMuted;
+            insertCoinSound.muted = isMuted;
+            runningOutOfTimeSound.muted = isMuted;
+            dieRoadSound.muted = isMuted;
+            dieWaterSound.muted = isMuted;
             message = isMuted ? "Muted" : ""; // Show "Muted" message when muted
         }
 
@@ -462,7 +483,7 @@
                 // Check if frog is in the river and not on a platform
                 if (frog.y < 6 * gridSize && frog.y > gridSize && !safeOnLogOrGrass) {
                     message = "Into the river!";
-                    playSound(waterSound);
+                    playSound(dieWaterSound);
                     showMessageAndRestart();
                 }
 
@@ -471,6 +492,7 @@
                 roadElements.forEach(el => {
                     if (isColliding(frog, el)) {
                         message = "Hit by traffic!!";
+                        playSound(dieRoadSound);
                         showMessageAndRestart();
                     }
                 });
@@ -503,6 +525,10 @@
                 lastTime = timestamp;
 
                 countdown -= deltaTime;
+                if (countdown <= 10 && !runningOutOfTimePlayed) {
+                    runningOutOfTimePlayed = true;
+                    playSound(runningOutOfTimeSound);
+                }
                 if (countdown <= 0) {
                     message = "*** Too slow! You lost 1 life! ***";
                     showMessageAndRestart(); // Display message and restart the game
@@ -540,6 +566,9 @@
             message = "";
             levelComplete = false; // Allow new level to be completed
             gameOverPlayed = false; // Reset game over sound play state
+            runningOutOfTimePlayed = false;
+            runningOutOfTimeSound.pause();
+            runningOutOfTimeSound.currentTime = 0;
             countdown = initialTimer-1; // Reset the timer
 
             if (resetSpeeds) {
@@ -573,6 +602,8 @@
               drawMessage(); // Display game over message   
               playSound(gameOverSound);
               
+              bgMusic.pause();
+              bgMusic.currentTime = 0;
               isGameOver = true; // Set game over state to true
 
                // Restart game after displaying message for 3 seconds
@@ -612,6 +643,8 @@
              };
             gameOverPlayed = false;
             resetGame();
+            bgMusic.currentTime = 0;
+            if (!isMuted) bgMusic.play();
             gameLoop();
         }
 
@@ -625,6 +658,12 @@
         // Start the game when images are loaded
         function startGame() {
             console.log("All images loaded. Starting the game..."); // Debugging image load
+            if (!isMuted) {
+                insertCoinSound.play();
+                insertCoinSound.addEventListener('ended', () => {
+                    bgMusic.play();
+                }, { once: true });
+            }
             gameLoop();
         }
     </script>

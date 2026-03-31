@@ -70,7 +70,7 @@
         // v3.5 fix abhorrent use of animationFrame
         // v3.6 and 3.7 canvas 4:3, and collision det improvement
 
-        const version = "v3.7";
+        const version = "v3.8";
 
         const canvas = document.getElementById("gameCanvas");
         let animationID; // for cancelling animationFrames
@@ -131,29 +131,37 @@
         // Load images with  generalized error handling
         const frogImg = new Image();
         const logImg = new Image();
+        const log1Img = new Image();
+        const log2Img = new Image();
+        const log3Img = new Image();
         const grassImg = new Image();
         const carImg = new Image();
         const truckImg = new Image();
         const bushImg = new Image();
         const wallImg = new Image();
         const waveImg = new Image();
+        const leavesImg = new Image();
 
-        // Set source paths and add error handlers
-        frogImg.src = 'frog1.svg';
-        logImg.src = 'log.svg';
-        grassImg.src = 'grass.svg';
-        carImg.src = 'car.svg';
-        truckImg.src = 'truck.svg';
-        bushImg.src = 'bush.svg';
-        wallImg.src = 'wall.svg';
-        waveImg.src = 'wave.svg';
-
-        // Error handling for images
-        const images = [frogImg, logImg, grassImg, carImg, truckImg, bushImg, wallImg, waveImg];
-        images.forEach((img) => {
+        // Wait for all images to load before starting the game
+        //   due to MVS 3.8 HTTPD web server being a bit slow
+        //    it's 53 year old tech after all....
+        const images = [frogImg, logImg, log1Img, log2Img, log3Img, grassImg, carImg, truckImg, bushImg, wallImg, waveImg, leavesImg];
+        const imageSrcs = ['frog1.svg', 'log.svg', 'log1.svg', 'log2.svg', 'log3.svg', 'grass.svg', 'car.svg', 'truck.svg', 'bush.svg', 'wall.svg', 'wave.svg', 'leaves.png'];
+        let imagesLoaded = 0;
+        function imageReady() {
+            imagesLoaded++;
+            if (imagesLoaded === images.length) {
+                startGame();
+            }
+        }
+        // Set handlers BEFORE setting src to avoid missing cached loads
+        images.forEach((img, i) => {
+            img.onload = imageReady;
             img.onerror = () => {
                 console.error(`Failed to load image: ${img.src}`);
+                imageReady();
             };
+            img.src = imageSrcs[i];
         });
 
         // Error handling for audio
@@ -166,19 +174,6 @@
         runningOutOfTimeSound.onerror = () => console.error(`Failed to load audio: ${runningOutOfTimeSound.src}`);
         dieRoadSound.onerror = () => console.error(`Failed to load audio: ${dieRoadSound.src}`);
         dieWaterSound.onerror = () => console.error(`Failed to load audio: ${dieWaterSound.src}`);
-
-        // Wait for all images to load before starting the game
-        //   due to MVS 3.8 HTTPD web server being a bit slow
-        //    it's 53 year old tech after all....
-        let imagesLoaded = 0;
-        images.forEach((img) => {
-            img.onload = () => {
-                imagesLoaded++;
-                if (imagesLoaded === images.length) {
-                    startGame(); // Start the game after all images are loaded
-                }
-            };
-        });
 
         // Prevent default behavior of arrow keys 
         // in Safari the arrow keys will move the whole canvas....sheesh
@@ -194,27 +189,44 @@
             wallElements.push({ x: x, y: 6 * gridSize });
         }
 
+        // Log size variants (in grid units), like the original Frogger
+        const logSizes = [1, 2, 3]; // short, medium, long
+
         // Create a river object, make sure no overlap
         function createRiverObject(type, y, elements) {
             let x;
+            let width = gridSize; // default for grass
+            if (type === 'log') {
+                const sizeUnits = logSizes[Math.floor(Math.random() * logSizes.length)];
+                width = sizeUnits * gridSize;
+            }
+            let attempts = 0;
             do {
                 x = Math.random() * canvas.width;
-            } while (isTooClose(x, y, elements));
-            return { type, x, y, speed: objectSpeeds[type] };
+                attempts++;
+            } while (isTooClose(x, y, elements, width) && attempts < 50);
+            return { type, x, y, speed: objectSpeeds[type], width };
         }
 
         // Create a road object ensuring no overlap
         function createRoadObject(type, y, elements) {
             let x;
+            let attempts = 0;
             do {
                 x = Math.random() * canvas.width;
-            } while (isTooClose(x, y, elements));
-            return { type, x, y, speed: objectSpeeds[type] };
+                attempts++;
+            } while (isTooClose(x, y, elements, gridSize) && attempts < 50);
+            return { type, x, y, speed: objectSpeeds[type], width: gridSize };
         }
 
-        // Check if the new object  placed is to close to previous object
-        function isTooClose(x, y, elements) {
-            return elements.some(el => Math.abs(el.x - x) < 100 && el.y === y);
+        // Check if the new object placed is too close to previous object
+        function isTooClose(x, y, elements, width) {
+            const minGap = 80;
+            return elements.some(el => {
+                if (el.y !== y) return false;
+                const elWidth = el.width || gridSize;
+                return Math.abs(el.x - x) < Math.max(elWidth, width) + minGap;
+            });
         }
 
         // Put grass and logs on river
@@ -324,17 +336,34 @@
             drawMessage(); // Ensure message is shown immediately
         }
 
-        // Draw the top safe area (bushes)
+        // Draw the top safe area (tiled leaves)
         function drawSafeArea() {
             ctx.fillStyle = "#228B22"; // Forest green for the safe area
             ctx.fillRect(0, 0, canvas.width, gridSize);
-            ctx.drawImage(bushImg, 0, 0, canvas.width, gridSize); // Draw bushes
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.drawImage(leavesImg, x, 0, gridSize, gridSize);
+            }
         }
 
-        // Draw the river
+        // Draw the river with decorative waves
         function drawRiver() {
             ctx.fillStyle = "#1E90FF"; // Blue color for water
             ctx.fillRect(0, gridSize, canvas.width, 5 * gridSize);
+
+            // Animated decorative waves (not landable)
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = 1.5;
+            const waveOffset = (Date.now() / 800) % (Math.PI * 2);
+            for (let row = 0; row < 5; row++) {
+                const y = gridSize + row * gridSize + gridSize / 2;
+                for (let wx = 0; wx < canvas.width; wx += 120) {
+                    const shift = wx + (row % 2) * 60;
+                    ctx.beginPath();
+                    ctx.moveTo(shift, y + Math.sin(waveOffset + row) * 3);
+                    ctx.quadraticCurveTo(shift + 15, y - 6 + Math.sin(waveOffset + row) * 3, shift + 30, y + Math.sin(waveOffset + row) * 3);
+                    ctx.stroke();
+                }
+            }
         }
 
         // Draw the road
@@ -447,8 +476,8 @@
                 riverElements.forEach(el => {
                     if (el.y >= gridSize && el.y < 6 * gridSize && el.type !== 'wave') {
                         el.x += el.speed * dTime;
-                        if (el.x < -gridSize) el.x = canvas.width;
-                        if (el.x > canvas.width) el.x = -gridSize;
+                        if (el.x < -el.width) el.x = canvas.width;
+                        if (el.x > canvas.width) el.x = -el.width;
                     }
                 });
 
@@ -460,7 +489,11 @@
                 // Draw river elements at their new positions
                 riverElements.forEach(el => {
                     if (el.y >= gridSize && el.y < 6 * gridSize) {
-                        if (el.type === 'log') ctx.drawImage(logImg, el.x, el.y, gridSize, gridSize);
+                        if (el.type === 'log') {
+                            const sizeUnits = Math.round(el.width / gridSize);
+                            const img = sizeUnits === 3 ? log3Img : sizeUnits === 2 ? log2Img : log1Img;
+                            ctx.drawImage(img, el.x, el.y, el.width, gridSize);
+                        }
                         if (el.type === 'grass') ctx.drawImage(grassImg, el.x, el.y, gridSize, gridSize);
                         if (el.type === 'wave') ctx.drawImage(waveImg, el.x, el.y, gridSize, gridSize);
                     }
@@ -554,10 +587,19 @@
 
             function isOnRiverElement(frog, el) {
                 if (frog.y !== el.y || (el.type !== 'log' && el.type !== 'grass')) return false;
-                const overlapStart = Math.max(frog.x, el.x);
-                const overlapEnd = Math.min(frog.x + gridSize, el.x + gridSize);
-                const overlap = overlapEnd - overlapStart;
-                return overlap > gridSize * 0.5;
+                const elWidth = el.width || gridSize;
+                const frogLeft = frog.x;
+                const frogRight = frog.x + gridSize;
+                const frogCenter = frog.x + gridSize / 2;
+
+                // Check main position
+                if (frogCenter >= el.x && frogCenter <= el.x + elWidth) return true;
+
+                // Check wrapped position (element scrolled off one side and appearing on the other)
+                const wrappedX = el.x < 0 ? el.x + canvas.width + elWidth : el.x - canvas.width - elWidth;
+                if (frogCenter >= wrappedX && frogCenter <= wrappedX + elWidth) return true;
+
+                return false;
             }
 
         // Reset the game elements to their initial positions and speeds

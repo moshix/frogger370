@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50">
+  <!-- Left rounded end -->
+  <ellipse cx="14" cy="25" rx="14" ry="20" fill="#7A3B10"/>
+  <!-- Log body -->
+  <rect x="14" y="5" width="72" height="40" fill="#7A3B10"/>
+  <!-- Wood grain -->
+  <rect x="8" y="9" width="74" height="4" rx="2" fill="#9E6B3A" opacity="0.5"/>
+  <rect x="10" y="17" width="68" height="3" rx="1" fill="#5C2A08" opacity="0.6"/>
+  <rect x="7" y="24" width="76" height="5" rx="2" fill="#9E6B3A" opacity="0.4"/>
+  <rect x="12" y="33" width="64" height="3" rx="1" fill="#5C2A08" opacity="0.5"/>
+  <rect x="9" y="39" width="70" height="3" rx="1" fill="#9E6B3A" opacity="0.3"/>
+  <!-- Knot -->
+  <ellipse cx="45" cy="22" rx="5" ry="4" fill="#5C2A08" opacity="0.7"/>
+  <ellipse cx="45" cy="22" rx="3" ry="2.5" fill="#6B3410" opacity="0.5"/>
+  <!-- Cross-section (right end) -->
+  <ellipse cx="86" cy="25" rx="14" ry="20" fill="#9E6B3A"/>
+  <ellipse cx="86" cy="25" rx="11" ry="17" fill="#C4894E"/>
+  <ellipse cx="86" cy="25" rx="8" ry="12" fill="#A67039"/>
+  <ellipse cx="86" cy="25" rx="5" ry="7" fill="#CDAA7D"/>
+  <ellipse cx="86" cy="25" rx="2" ry="3" fill="#7A4A2C"/>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+  <!-- Left rounded end -->
+  <ellipse cx="12" cy="25" rx="12" ry="20" fill="#8B4513"/>
+  <!-- Log body -->
+  <rect x="12" y="5" width="26" height="40" fill="#8B4513"/>
+  <!-- Wood grain -->
+  <rect x="6" y="8" width="30" height="5" rx="2" fill="#A0522D" opacity="0.6"/>
+  <rect x="8" y="18" width="26" height="3" rx="1" fill="#6B3410" opacity="0.5"/>
+  <rect x="6" y="26" width="29" height="4" rx="2" fill="#A0522D" opacity="0.4"/>
+  <rect x="9" y="34" width="24" height="3" rx="1" fill="#6B3410" opacity="0.5"/>
+  <!-- Cross-section (right end) -->
+  <ellipse cx="38" cy="25" rx="12" ry="20" fill="#A0522D"/>
+  <ellipse cx="38" cy="25" rx="10" ry="18" fill="#CD853F"/>
+  <ellipse cx="38" cy="25" rx="7" ry="13" fill="#B8732A"/>
+  <ellipse cx="38" cy="25" rx="4" ry="8" fill="#D2A06D"/>
+  <ellipse cx="38" cy="25" rx="2" ry="3" fill="#8B5E3C"/>
+</svg>
